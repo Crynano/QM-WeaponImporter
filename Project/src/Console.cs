@@ -12,14 +12,14 @@ internal static class Logger
     private static string Log = "";
 
     private static string GetPath => Path.Combine(AssemblyFolder, LogFileName);
-    public static void WriteToLog(string message, bool writeToUnity = true)
+    public static void WriteToLog(string message, LogType logType = LogType.Info, bool writeToUnity = true)
     {
         if (Log.Equals(string.Empty))
         {
-            Log = $"[{DateTime.Now.ToString()}] [{LogSignature}] NEW LOG. \n";
+            Log = $"[{DateTime.Now.ToString()}][{LogSignature}] NEW LOG. \n";
         }
 
-        string beautifiedMessage = $"[{DateTime.Now.ToString()}] [{LogSignature}] {message}";
+        string beautifiedMessage = $"[{DateTime.Now.ToString()}][{LogSignature}][{logType.ToString().ToUpper()}] {message}";
 
         // We can duplicate logs for Bepinex or custom console users.
         if (writeToUnity) Debug.Log(beautifiedMessage);
@@ -42,5 +42,12 @@ internal static class Logger
         existingLog += Log;
         File.WriteAllText(GetPath, existingLog);
         Log = string.Empty;
+    }
+
+    public enum LogType
+    {
+        Info,
+        Warning,
+        Error
     }
 }

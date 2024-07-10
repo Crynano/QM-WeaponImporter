@@ -7,16 +7,40 @@ namespace QM_WeaponImporter
     public class ExportableWeaponList
     {
         // Gonna K.I.S.S. it
-        private List<WeaponTemplate> weapons = new List<WeaponTemplate>();
+        private List<MeleeWeaponTemplate> meleeWeapons = new List<MeleeWeaponTemplate>();
+        private List<RangedWeaponTemplate> rangedWeapons = new List<RangedWeaponTemplate>();
 
-        public List<WeaponTemplate> Weapons { get => weapons; set => weapons = value; }
+        public List<MeleeWeaponTemplate> Melee { get => meleeWeapons; set => meleeWeapons = value; }
+        public List<RangedWeaponTemplate> Ranged { get => rangedWeapons; set => rangedWeapons = value; }
 
-        public static ExportableWeaponList GetExampleWeapon()
+        public static ExportableWeaponList GetExample()
         {
             var exampleList = new ExportableWeaponList();
-            exampleList.Weapons = new List<WeaponTemplate>
+            exampleList.Melee = new List<MeleeWeaponTemplate>
             {
-                new WeaponTemplate(true)
+                MeleeWeaponTemplate.GetExample()
+            };
+            exampleList.Ranged = new List<RangedWeaponTemplate>
+            {
+                RangedWeaponTemplate.GetExample()
+            };
+            return exampleList;
+        }
+    }
+
+    [Serializable]
+    public class ExportableFactionList
+    {
+        private List<FactionTemplate> factions = new List<FactionTemplate>();
+
+        public List<FactionTemplate> Factions { get => factions; set => factions = value; }
+
+        public static ExportableFactionList GetExample()
+        {
+            var exampleList = new ExportableFactionList();
+            exampleList.Factions = new List<FactionTemplate>
+            {
+                FactionTemplate.GetExample()
             };
             return exampleList;
         }

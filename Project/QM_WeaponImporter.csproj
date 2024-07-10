@@ -40,18 +40,6 @@
 			<HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\Assembly-CSharp.dll</HintPath>
 			<Private>false</Private>
 		</Reference>
-		<Reference Include="PresentationFramework">
-		  <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\PresentationFramework.dll</HintPath>
-		</Reference>
-		<Reference Include="System.ServiceModel" />
-		<Reference Include="System.Xaml">
-		  <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Xaml\v4.0_4.0.0.0__b77a5c561934e089\System.Xaml.dll</HintPath>
-		  <Private>True</Private>
-		</Reference>
-		<Reference Include="System.Xml.Serialization">
-		  <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Xml.Serialization\v4.0_4.0.0.0__b77a5c561934e089\System.Xml.Serialization.dll</HintPath>
-		  <Private>False</Private>
-		</Reference>
 		<Reference Include="UnityEngine">
 			<HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.dll</HintPath>
 			<Private>false</Private>
@@ -93,4 +81,8 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
+  
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy /Y &quot;$(TargetDir)$(ProjectName).dll&quot; &quot;D:\SteamLibrary\steamapps\workshop\content\2059170\3284022031\$(ProjectName).dll" />
+  </Target>
 </Project>
