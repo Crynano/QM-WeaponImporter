@@ -19,7 +19,8 @@ namespace QM_WeaponImporter
         private static List<string> ExpectedPaths = new List<string>()
         {
             "meleeweapons",
-            "rangedweapons"
+            "rangedweapons",
+            "itemtransforms"
         };
 
         // Create the global config in the assembly folder.
@@ -72,10 +73,20 @@ namespace QM_WeaponImporter
                         if (ExpectedPaths.Exists(x => x.ToLower() == path.Key.ToLower()))
                         //if (ExpectedDictionaries.TryGetValue(path.Key, out var typeOfItem))
                         {
-                            // Process this one
-                            var deserializedItem = TypeToClass(path.Key, configItemContent);
-                            // We try? Not fit for error control yet.
-                            GameItemCreator.CreateWeapon(deserializedItem);
+                            if (path.Key == "meleeweapons" || path.Key == "rangedweapons")
+                            {
+                                // Process this one
+                                var deserializedItem = TypeToClass(path.Key, configItemContent);
+                                // We try? Not fit for error control yet.
+                                GameItemCreator.CreateWeapon(deserializedItem);
+                            }
+                            // TODO: need a way to make this generic to config table entries, switching for each entry type is not ideal
+                            // this may not even belong here entirely, seperate reader/parser entirely for these data table entries?
+                            else if (path.Key == "itemtransforms")
+                            {
+                                ItemTransformTemplate deserializedItem = DynamicDeserializer<ItemTransformTemplate>(configItemContent);
+                                GameItemCreator.CreateConfigTableEntry(deserializedItem);
+                            }
                         }
                         else
                         {
