@@ -100,6 +100,7 @@ namespace QM_WeaponImporter
         /// WeaponDescriptorParameters
         /// </summary>
         public string grip { get; set; }
+        // This properties get moved to another descriptors
         public string randomAttackSoundBank { get; set; }
         public string randomDryShotSoundBank { get; set; }
         public string randomFailedAttackSoundBank { get; set; }

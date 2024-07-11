@@ -1,6 +1,7 @@
 ﻿using MGSC;
 using Newtonsoft.Json;
 using QM_WeaponImporter.Templates;
+using QM_WeaponImporter.Templates.Descriptors;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,6 +21,18 @@ namespace QM_WeaponImporter
 
         private static List<IConfigParser> Parsers = new List<IConfigParser>();
 
+        // How about we load descriptors first?
+        private static List<CustomItemContentDescriptor> itemDescriptors = new List<CustomItemContentDescriptor>()
+        {
+            new CustomBackpackDescriptor()
+            {
+                overridenRenderId = "medicbackpack",
+                iconSpritePath = "Assets/Images/medicbackpack.png",
+                smallIconSpritePath = "Assets/Images/medicbackpack.png",
+                shadowOnFloorSpritePath = "Assets/Images/medicbackpack.png"
+            }
+        };
+
         public static void LoadDefaultParsers()
         {
             // We can just copy the code they used xD.
@@ -36,9 +49,26 @@ namespace QM_WeaponImporter
                 ItemTransformationRecord myTransform = new ItemTransformationRecord();
                 myTransform = myTransform.Clone(itemTransformRecord.id);
                 myTransform.OutputItems = itemTransformRecord.outputItems;
-                Logger.WriteToLog($"Output items for {itemTransformRecord.id} are {myTransform.OutputItems} and was {itemTransformRecord.outputItems}");
                 MGSC.Data.ItemTransformation.AddRecord(myTransform.Id, myTransform);
             }));
+            Parsers.Add(new TemplateParser<FactionTemplate>("factionitems", delegate (FactionTemplate factionTemplate)
+            {
+                //GameItemCreator.CreateRangedWeapon(factionTemplate);
+                GameItemCreator.AddItemsToFactions(factionTemplate);
+            }));
+            Parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
+            {
+                Logger.WriteToLog($"The ID for Backpack from import is {backpackItem.Id}");
+                backpackItem.ContentDescriptor = GetDescriptor<BackpackDescriptor>(backpackItem.Id);
+                MGSC.Data.Items.AddRecord(backpackItem.Id, backpackItem);
+            }));
+        }
+
+        public static T GetDescriptor<T>(string id) where T : ItemContentDescriptor
+        {
+            // Transform it first no?
+            Logger.WriteToLog($"Get descriptor for {id}");
+            return itemDescriptors.Find(x => x.attachedId.Equals(id)).GetOriginal() as T;
         }
 
         /// <summary>
