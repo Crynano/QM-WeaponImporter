@@ -18,6 +18,7 @@ namespace QM_WeaponImporter
             {
                 { "meleeweapons", "Assets/Config/meleeweapons" },
                 { "rangedweapons", "Assets/Config/rangedweapons" },
+                { "itemtransforms", "Assets/Config/itemtransforms" },
             };
         }
 
