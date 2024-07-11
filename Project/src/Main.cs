@@ -12,6 +12,7 @@ namespace QM_WeaponImporter
             //Logger.FlushAdditive();
             Importer.CreateExampleConfigFiles(Importer.AssemblyFolder);
             Importer.CreateGlobalConfig(Importer.AssemblyFolder);
+            ConfigManager.LoadDefaultParsers();
             try
             {
                 ConfigManager.ImportConfig(Importer.GetGlobalConfig(Importer.AssemblyFolder));

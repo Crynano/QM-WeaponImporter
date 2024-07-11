@@ -1,8 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using MGSC;
+using Newtonsoft.Json;
 using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 
 namespace QM_WeaponImporter
 {
@@ -16,12 +18,37 @@ namespace QM_WeaponImporter
     {
         public static string rootFolder;
 
-        private static List<string> ExpectedPaths = new List<string>()
+        private static List<IConfigParser> Parsers = new List<IConfigParser>();
+
+        public static void LoadDefaultParsers()
         {
-            "meleeweapons",
-            "rangedweapons",
-            "itemtransforms"
-        };
+            // We can just copy the code they used xD.
+            Parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
+            {
+                GameItemCreator.CreateMeleeWeapon(weaponTemplate);
+            }));
+            Parsers.Add(new TemplateParser<RangedWeaponTemplate>("rangedweapons", delegate (RangedWeaponTemplate weaponTemplate)
+            {
+                GameItemCreator.CreateRangedWeapon(weaponTemplate);
+            }));
+            Parsers.Add(new TemplateParser<ItemTransformTemplate>("itemtransforms", delegate (ItemTransformTemplate itemTransformRecord)
+            {
+                ItemTransformationRecord myTransform = new ItemTransformationRecord();
+                myTransform = myTransform.Clone(itemTransformRecord.id);
+                myTransform.OutputItems = itemTransformRecord.outputItems;
+                Logger.WriteToLog($"Output items for {itemTransformRecord.id} are {myTransform.OutputItems} and was {itemTransformRecord.outputItems}");
+                MGSC.Data.ItemTransformation.AddRecord(myTransform.Id, myTransform);
+            }));
+        }
+
+        /// <summary>
+        /// Modder can use this function to add custom data parsers.
+        /// </summary>
+        /// <param name="userTemplate"></param>
+        public static void AddParser(IConfigParser userTemplate)
+        {
+            Parsers.Add(userTemplate);
+        }
 
         // Create the global config in the assembly folder.
         // You only send the config over, then everything else is automatic.
@@ -30,8 +57,6 @@ namespace QM_WeaponImporter
             try
             {
                 Logger.WriteToLog($"Starting import config from: {userConfig.rootFolder}");
-                // Start the iteration here.
-                // Use the root in local, then load the weapon config, and for each weapon load their resources.
                 rootFolder = userConfig.rootFolder;
                 if (rootFolder == null || rootFolder.Equals(string.Empty))
                 {
@@ -44,12 +69,7 @@ namespace QM_WeaponImporter
                     return false;
                 }
 
-                // If everything has succeeded proceed.
-                //var configText = File.ReadAllText(Path.Combine(rootFolder, ""));
-                //var config = JsonConvert.DeserializeObject<ConfigTemplate>(rootFolder);
-                // Here we already have a userConfig. Ignore loading.
-                // Get all weapons from userconfig
-                Logger.WriteToLog($"Iterating through the folders");
+                Logger.WriteToLog($"Iterating through folders");
                 foreach (var path in userConfig.folderPaths)
                 {
                     string folderPath = Path.Combine(rootFolder, path.Value);
@@ -58,42 +78,20 @@ namespace QM_WeaponImporter
                         Logger.WriteToLog($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.", Logger.LogType.Warning);
                         continue;
                     }
+                    var foundParser = Parsers.Find(x => x.Identifier.Equals(path.Key.ToLower()));
+                    if (foundParser == null)
+                    {
+                        Logger.WriteToLog($"No parser exists for [{path.Key}]", Logger.LogType.Warning);
+                        continue;
+                    }
                     Logger.WriteToLog($"Checking for {path}");
                     DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
                     FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
-                    // Now call the appropiate deserializer.
                     foreach (FileInfo singleFile in files)
                     {
-                        // Here we have ALL melee Weapons,
-                        // Or ALL Ranged weapons.
-                        // or all equipment.
-                        // Deserialize, then parse.
                         Logger.WriteToLog($"Iterating through {singleFile.Name}");
                         string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
-                        if (ExpectedPaths.Exists(x => x.ToLower() == path.Key.ToLower()))
-                        //if (ExpectedDictionaries.TryGetValue(path.Key, out var typeOfItem))
-                        {
-                            if (path.Key == "meleeweapons" || path.Key == "rangedweapons")
-                            {
-                                // Process this one
-                                var deserializedItem = TypeToClass(path.Key, configItemContent);
-                                // We try? Not fit for error control yet.
-                                GameItemCreator.CreateWeapon(deserializedItem);
-                            }
-                            // TODO: need a way to make this generic to config table entries, switching for each entry type is not ideal
-                            // this may not even belong here entirely, seperate reader/parser entirely for these data table entries?
-                            else if (path.Key == "itemtransforms")
-                            {
-                                ItemTransformTemplate deserializedItem = DynamicDeserializer<ItemTransformTemplate>(configItemContent);
-                                GameItemCreator.CreateConfigTableEntry(deserializedItem);
-                            }
-                        }
-                        else
-                        {
-                            // Ignore
-                            Logger.WriteToLog($"No parser exists for [{path.Key}]", Logger.LogType.Warning);
-                        }
-                        Logger.WriteToLog("Analyzing file ended");
+                        foundParser.Parse(configItemContent);
                     }
                 }
                 Logger.WriteToLog($"Configuration success for {userConfig.rootFolder}");
@@ -101,7 +99,7 @@ namespace QM_WeaponImporter
             }
             catch (Exception e)
             {
-                Logger.WriteToLog($"Configuration loading for {userConfig.rootFolder} failed.\n{e.Message}\n{e.Source}", Logger.LogType.Error);
+                Logger.WriteToLog($"Configuration failed for {userConfig.rootFolder}.\n{e.Message}\n{e.InnerException}", Logger.LogType.Error);
                 return false;
             }
         }

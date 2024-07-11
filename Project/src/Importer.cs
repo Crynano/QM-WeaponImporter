@@ -96,6 +96,7 @@ namespace QM_WeaponImporter
                 throw new NullReferenceException($"Directory {rootPath} does not exist.");
             }
             
+            // Maybe to help with this, import the file if exists, and if defaults are not there, add them?
             CreateFile(Path.Combine(rootPath, GlobalConfigName), JsonConvert.SerializeObject(new ConfigTemplate(), Formatting.Indented));
         }
 
