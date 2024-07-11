@@ -17,8 +17,14 @@ namespace QM_WeaponImporter
             folderPaths = new Dictionary<string, string>
             {
                 { "meleeweapons", "Assets/Config/meleeweapons" },
-                { "rangedweapons", "Assets/Config/rangedweapons" }
+                { "rangedweapons", "Assets/Config/rangedweapons" },
             };
+        }
+
+        public ConfigTemplate(string rootFolder, Dictionary<string, string> folderPaths)
+        {
+            this.rootFolder = rootFolder;
+            this.folderPaths = folderPaths;
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -94,27 +95,25 @@ namespace QM_WeaponImporter
             }
         }
 
-        // Probably this is the LINKER!
-        private static WeaponTemplate TypeToClass(WeaponTemplate type, string content)
-        {
-            switch (type)
-            {
-                case MeleeWeaponTemplate:
-                    // DAMN THIS IS ALLOWED!
-                    return DynamicDeserializer<MeleeWeaponTemplate>(content);
-                case RangedWeaponTemplate:
-                    return DynamicDeserializer<RangedWeaponTemplate>(content);
-                default:
-                    return null;
-            }
-        }
+        //private static WeaponTemplate TypeToClass(WeaponTemplate type, string content)
+        //{
+        //    switch (type)
+        //    {
+        //        case MeleeWeaponTemplate:
+        //            // DAMN THIS IS ALLOWED!
+        //            return DynamicDeserializer<MeleeWeaponTemplate>(content);
+        //        case RangedWeaponTemplate:
+        //            return DynamicDeserializer<RangedWeaponTemplate>(content);
+        //        default:
+        //            return null;
+        //    }
+        //}
 
         private static WeaponTemplate TypeToClass(string type, string content)
         {
             switch (type)
             {
                 case "meleeweapons":
-                    // DAMN THIS IS ALLOWED!
                     return DynamicDeserializer<MeleeWeaponTemplate>(content);
                 case "rangedweapons":
                     return DynamicDeserializer<RangedWeaponTemplate>(content);

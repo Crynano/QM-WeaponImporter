@@ -1,7 +1,9 @@
 ﻿using MGSC;
+using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering.Universal;
 
 namespace QM_WeaponImporter
 {
@@ -32,7 +34,7 @@ namespace QM_WeaponImporter
                     ConfigureRangedWeapon(ref myWeapon, userWeapon as RangedWeaponTemplate);
                 }
                 SetCommonProperties(ref myWeapon, userWeapon);
-                SetOtherProperties(ref myWeapon, userWeapon);
+                SetDescriptorProperties(ref myWeapon, userWeapon);
                 myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
@@ -53,7 +55,7 @@ namespace QM_WeaponImporter
                 WeaponRecord myWeapon = new WeaponRecord();
                 ConfigureMeleeWeapon(ref myWeapon, userWeapon);
                 SetCommonProperties(ref myWeapon, userWeapon);
-                SetOtherProperties(ref myWeapon, userWeapon);
+                SetDescriptorProperties(ref myWeapon, userWeapon);
                 myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
@@ -74,7 +76,7 @@ namespace QM_WeaponImporter
                 WeaponRecord myWeapon = new WeaponRecord();
                 ConfigureRangedWeapon(ref myWeapon, userWeapon);
                 SetCommonProperties(ref myWeapon, userWeapon);
-                SetOtherProperties(ref myWeapon, userWeapon);
+                SetDescriptorProperties(ref myWeapon, userWeapon);
                 myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
@@ -87,7 +89,7 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static void SetOtherProperties(ref WeaponRecord myWeapon, WeaponTemplate userWeapon)
+        private static void SetDescriptorProperties(ref WeaponRecord myWeapon, WeaponTemplate userWeapon)
         {
             WeaponDescriptor myWeaponDescriptor = ScriptableObject.CreateInstance("WeaponDescriptor") as WeaponDescriptor;
             myWeaponDescriptor._overridenRenderId = userWeapon.id;
@@ -105,7 +107,7 @@ namespace QM_WeaponImporter
                 myWeaponDescriptor._shadow = shadowSprite;
 
             // If grip is null then a bunch of problems will arise.
-            if (userWeapon.grip == null || userWeapon.grip == string.Empty)
+            if (userWeapon.grip == null || userWeapon.grip.Equals(string.Empty))
             {
                 myWeaponDescriptor._grip = HandsGrip.BareHands;
             }
@@ -114,13 +116,61 @@ namespace QM_WeaponImporter
                 myWeaponDescriptor._grip = StringToEnum<MGSC.HandsGrip>(userWeapon.grip);
             }
 
-            myWeaponDescriptor._hasHFGOverlay = userWeapon.hasHFGOverlay || false;
+            myWeaponDescriptor._hasHFGOverlay = userWeapon.hasHFGOverlay;
 
             // TODO: Still have to implement
-            //myWeaponDescriptor._muzzles = new List<Muzzle>().ToArray();
-            //myWeaponDescriptor._overrideBullet = userWeapon.overridenBulletPrefab;
-            // Let's set some defaults
-            MGSC.Data.Descriptors.TryGetValue("meleeweapons", out DescriptorsCollection meleeWeaponsDescriptors);
+            var foundMuzzles = MonoBehaviour.FindObjectsOfType<Muzzle>();
+            List<Muzzle> singleMuzzle = [.. foundMuzzles];
+            GameObject muzzleGo = new GameObject("Test Muzzle");
+            Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
+            muzzleGo.AddComponent<Light2D>();
+            muzzle._additLightIntencityMult = 1f;
+            muzzle._muzzleIntensityCurve = new AnimationCurve()
+            {
+                keys = 
+                [
+                     new Keyframe()
+                     {
+                         time = 0,
+                         value = 0,
+                     },
+                     new Keyframe()
+                     {
+                         time = .2f,
+                         value = 0.5f,
+                     }
+                ],
+
+            };
+            myWeaponDescriptor._muzzles =
+            [
+                muzzle
+            ];
+
+            //BulletTemplate userBullet = Importer.Load<BulletTemplate>(userWeapon.bulletAssetPath);
+            //List<Sprite> facadeDecalsSprites = new List<Sprite>();
+            //foreach (string spritePath in userBullet.facadeDecals)
+            //{
+            //    facadeDecalsSprites.Add(Importer.LoadNewSprite(spritePath, 100f));
+            //}
+            // bullets have types. Now we are a bit fucked.
+            // BUT WAIT, WHAT IF I WANT TO USE A GAME BULLET? FUCK!
+            // Filter by type.
+            // I believe override bullet must not be set, it works through ammo description
+            //myWeaponDescriptor._overrideBullet = new CommonBullet()
+            //{
+            //    _bulletSpeed = userBullet.bulletSpeed,
+            //    _makeBloodDecals = userBullet.makeBloodDecals,
+            //    _putShotDecalsOnWalls = userBullet.putShotDecalsOnWalls,
+            //    _putBulletShellsOnFloor = userBullet.putBulletShellsOnFloor,
+            //    _rotateBulletInShotDir = userBullet.rotateBulletInShotDir,
+            //    _shakeDuration = userBullet.shakeDuration,
+            //    _shakeStrength = userBullet.shakeStrength,
+            //    _facadeDecals = facadeDecalsSprites.ToArray(),
+            //    //_gibsController = null;
+            //    _putDecals = userBullet.putDecals
+            //};
+
 
             // Custom sound bank.
             SoundBank myWeaponSoundBank = new SoundBank();
@@ -130,6 +180,7 @@ namespace QM_WeaponImporter
 
             //];
 
+            MGSC.Data.Descriptors.TryGetValue("meleeweapons", out DescriptorsCollection meleeWeaponsDescriptors);
             // This gets the army_knife sounds by default
             if ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0] != null)
             {

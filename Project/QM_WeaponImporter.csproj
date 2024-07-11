@@ -40,6 +40,9 @@
 			<HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\Assembly-CSharp.dll</HintPath>
 			<Private>false</Private>
 		</Reference>
+		<Reference Include="Unity.RenderPipelines.Universal.Runtime">
+		  <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
+		</Reference>
 		<Reference Include="UnityEngine">
 			<HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.dll</HintPath>
 			<Private>false</Private>

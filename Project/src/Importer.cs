@@ -45,6 +45,8 @@ namespace QM_WeaponImporter
                 {
                     FileData = File.ReadAllBytes(FilePath);
                     // Size does not matter, it gets overwritten.
+                    // TEsting with colour spaces.
+                    // Tex2D = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
                     Tex2D = new Texture2D(2, 2);
                     Tex2D.filterMode = FilterMode.Point;
                     ImageConversion.LoadImage(Tex2D, FileData);
@@ -62,7 +64,7 @@ namespace QM_WeaponImporter
         /// Use this function to create default files so you can have examples on-demand.
         /// </summary>
         /// <param name="rootPath"></param>
-        public static void CreateDefaultConfigFiles(string rootPath)
+        public static void CreateExampleConfigFiles(string rootPath)
         {
             // Items file
             if (!Directory.Exists(rootPath)) 
@@ -76,7 +78,7 @@ namespace QM_WeaponImporter
 
             // Examples
             var rangedWeaponExample = RangedWeaponTemplate.GetExample();
-            weaponSerialized = JsonConvert.SerializeObject(weaponListExample);
+            weaponSerialized = JsonConvert.SerializeObject(rangedWeaponExample);
             CreateFile(Path.Combine(rootPath, "example_rangedWeapon.json"), weaponSerialized);
 
             // Factions file
@@ -95,6 +97,32 @@ namespace QM_WeaponImporter
             }
             
             CreateFile(Path.Combine(rootPath, GlobalConfigName), JsonConvert.SerializeObject(new ConfigTemplate(), Formatting.Indented));
+        }
+
+        public static void CreateGlobalConfig(ConfigTemplate userConfig)
+        {
+            // GlobalConfigName
+            // Instance of default ConfigTemplate
+            string rootFolder = userConfig.rootFolder;
+            if (!Directory.Exists(rootFolder))
+            {
+                throw new NullReferenceException($"Directory {rootFolder} does not exist.");
+            }
+
+            CreateFile(Path.Combine(rootFolder, GlobalConfigName), JsonConvert.SerializeObject(userConfig, Formatting.Indented));
+        }
+
+        // Do not load images with this
+        public static T Load<T>(string path)
+        {
+            string fullPath = Path.Combine(ConfigManager.rootFolder, path);
+            if (!File.Exists(fullPath))
+            {
+                throw new NullReferenceException($"Path \"{fullPath}\" for Item of type {typeof(T).ToString()} is null.");
+            }
+            string loadedString = File.ReadAllText(fullPath);
+            T loadedObject = JsonConvert.DeserializeObject<T>(loadedString);
+            return loadedObject;
         }
 
         public static ConfigTemplate GetGlobalConfig(string path)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using QM_WeaponImporter.Templates;
 
 /* The following are, or should be, all variables from a WeaponDescriptor
 Id
@@ -61,23 +62,20 @@ namespace QM_WeaponImporter
     // This class is used to expose / map in an easier way the parameters of the weapons.
     // It also includes references to audio and language config so user doesn't need to know how to
     // handle every part of the weapon creation.
-    public class WeaponTemplate
+    public class WeaponTemplate : BreakableItemRecordTemplate, IWeaponDescriptorTemplate
     {
         /// <summary>
         /// Generic Properties
         /// </summary>
-        public string id{ get; set; }
+        public new string id { get; set; }
         public string name { get; set; }
         public string description { get; set; }
-        public int price{ get; set; }
-        public float weight{ get; set; }
         public int inventoryWidth{ get; set; }
         public string weaponClass{ get; set; }
         public string weaponSubClass{ get; set; }
         public string requiredAmmo{ get; set; }
         public string overrideAmmo{ get; set; }
         public string defaultAmmoId{ get; set; }
-        public string grip { get; set; }
         public float bonusAccuracy{ get; set; }
         public int range { get; set; }
         public int minimumDamage{ get; set; }
@@ -88,20 +86,6 @@ namespace QM_WeaponImporter
         public int magazineCapacity{ get; set; }
         public int reloadDuration{ get; set; }
         public bool reloadOneBulletAtATime{ get; set; }
-        public int maxDurability{ get; set; }
-        public int minDurabilityAfterRepair{ get; set; }
-        public bool unbreakable{ get; set; }
-        public string repairCategory{ get; set; }
-        public bool hasHFGOverlay { get; set; }
-        //public List<MGSC.Muzzle> muzzleList { get; set; } ??? WHAT IS THIS? MUZZLE EXPLOSION?
-        //public MGSC.CommonBullet overridenBulletPrefab { get; set; } ALSO RANGED? WHAT?
-        public string randomAttackSoundBank { get; set; }
-        public string randomDryShotSoundBank { get; set; }
-        public string randomFailedAttackSoundBank { get; set; }
-        public string randomReloadSoundBank { get; set; }
-        /// <summary>
-        /// Strange properties
-        /// </summary>
         public bool isSelfCharge{ get; set; }
         public int dotWoundsDamageBonus{ get; set; }
         public int fractureWoundDamageBonus{ get; set; }
@@ -113,14 +97,18 @@ namespace QM_WeaponImporter
         public float fovLookAngleMult{ get; set; }
 
         /// <summary>
-        /// Visuals
+        /// WeaponDescriptorParameters
         /// </summary>
-        public string iconPath { get; set; }
-        public string smallIconPath { get; set; }
-        public string shadowOnFloorSpritePath { get; set; }
-        /// <summary>
-        /// Localization
-        /// </summary>
+        public string grip { get; set; }
+        public string randomAttackSoundBank { get; set; }
+        public string randomDryShotSoundBank { get; set; }
+        public string randomFailedAttackSoundBank { get; set; }
+        public string randomReloadSoundBank { get; set; }
+        public float visualReachCellDuration { get; set; }
+        public List<string> entityFlySprites { get; set; }
+        public bool useCustomBullet { get; set; } = false;
+        public string bulletAssetPath { get; set; }
+        public bool hasHFGOverlay { get; set; }
 
         public WeaponTemplate()
         {
@@ -198,7 +186,7 @@ namespace QM_WeaponImporter
         //        randomReloadSoundBank = "",
         //        iconPath = "Images/Knife.png",
         //        smallIconPath = "Images/SmallDagger.png",
-        //        shadowOnFloorSpritePath = "folder/filename.extension"
+        //        shadowOnFloorPath = "folder/filename.extension"
         //    };
         //    return weaponTemplate;
         //}

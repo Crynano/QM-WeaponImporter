@@ -10,6 +10,7 @@ namespace QM_WeaponImporter
         {
             //Importer.CreateDefaultConfigFiles();
             //Logger.FlushAdditive();
+            Importer.CreateExampleConfigFiles(Importer.AssemblyFolder);
             Importer.CreateGlobalConfig(Importer.AssemblyFolder);
             try
             {
