@@ -36,23 +36,28 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="Assembly-CSharp">
-		  <HintPath>E:\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\Assembly-CSharp.dll</HintPath>
+		<Reference Include="Assembly-CSharp" publicize="true">
+			<HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\Assembly-CSharp.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="Unity.RenderPipelines.Universal.Runtime">
-		  <HintPath>E:\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
+		  <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\Unity.RenderPipelines.Universal.Runtime.dll</HintPath>
 		</Reference>
 		<Reference Include="UnityEngine">
-		  <HintPath>E:\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.dll</HintPath>
+			<HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="UnityEngine.AudioModule">
-		  <HintPath>E:\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+		  <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+		  <Private>False</Private>
 		</Reference>
 		<Reference Include="UnityEngine.CoreModule">
-		  <HintPath>E:\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+			<HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+			<Private>false</Private>
 		</Reference>
 		<Reference Include="UnityEngine.ImageConversionModule">
-		  <HintPath>E:\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+		  <HintPath>..\..\..\..\SteamLibrary\steamapps\common\Quasimorph\Quasimorph_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+		  <Private>False</Private>
 		</Reference>
 	</ItemGroup>
   
