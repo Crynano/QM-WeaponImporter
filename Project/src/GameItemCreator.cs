@@ -17,31 +17,6 @@ namespace QM_WeaponImporter
             Localization.Instance.OnLangChanged += Instance_OnLangChanged;
         }
 
-        public static bool CreateConfigTableEntry(ItemTransformTemplate entry)
-        {
-            // TODO: need a way to make this generic
-            try
-            {
-                Logger.WriteToLog($"Creating data entry with ID: {entry.id}");
-                if (entry.GetType() == typeof(ItemTransformTemplate))
-                {
-                    // Item Transform Record
-                    ItemTransformationRecord myTransform = new ItemTransformationRecord();
-                    myTransform = myTransform.Clone(entry.id); // had to clone to set the id
-                    myTransform.OutputItems = entry.outputItems;
-                    MGSC.Data.ItemTransformation.AddRecord(myTransform.Id, myTransform);
-                }
-
-                return true;
-            }
-            catch (Exception e)
-            {
-                Logger.WriteToLog($"Weapon [{entry.id}] couldn't be added.\n{e.Message}\n{e.Source}");
-                Logger.FlushAdditive();
-                return false;
-            }
-        }
-
         public static bool CreateWeapon(WeaponTemplate userWeapon)
         {
             try

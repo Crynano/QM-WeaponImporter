@@ -19,6 +19,9 @@ namespace QM_WeaponImporter
                 { "meleeweapons", "Assets/Config/meleeweapons" },
                 { "rangedweapons", "Assets/Config/rangedweapons" },
                 { "itemtransforms", "Assets/Config/itemtransforms" },
+                { "itemreceipts", "Assets/Config/itemreceipts" },
+                { "workbenchreceipts", "Assets/Config/workbenchreceipts" },
+                { "datadisks", "Assets/Config/datadisks" },
                 { "factionconfig", "Assets/Config/factionconfig" },
                 { "backpacks", "Assets/Config/backpacks" }
             };
