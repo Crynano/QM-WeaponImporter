@@ -5,9 +5,6 @@ using QM_WeaponImporter.Templates.Descriptors;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
-using UnityEngine;
-using static UnityEngine.Mesh;
 
 namespace QM_WeaponImporter
 {
