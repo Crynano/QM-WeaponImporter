@@ -1,7 +1,8 @@
-﻿using MGSC;
+using MGSC;
 using Newtonsoft.Json;
 using QM_WeaponImporter.Templates;
 using QM_WeaponImporter.Templates.Descriptors;
+using QM_WeaponImporter.Templates.Records;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -53,12 +54,11 @@ namespace QM_WeaponImporter
             }));
             Parsers.Add(new TemplateParser<FactionTemplate>("factionitems", delegate (FactionTemplate factionTemplate)
             {
-                //GameItemCreator.CreateRangedWeapon(factionTemplate);
                 GameItemCreator.AddItemsToFactions(factionTemplate);
             }));
             Parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
             {
-                Logger.WriteToLog($"The ID for Backpack from import is {backpackItem.Id}");
+                Logger.WriteToLog($"Backpack ID: [{backpackItem.Id}]");
                 backpackItem.ContentDescriptor = GetDescriptor<BackpackDescriptor>(backpackItem.Id);
                 MGSC.Data.Items.AddRecord(backpackItem.Id, backpackItem);
             }));
@@ -66,9 +66,7 @@ namespace QM_WeaponImporter
 
         public static T GetDescriptor<T>(string id) where T : ItemContentDescriptor
         {
-            // Transform it first no?
-            Logger.WriteToLog($"Get descriptor for {id}");
-            return itemDescriptors.Find(x => x.attachedId.Equals(id)).GetOriginal() as T;
+            return itemDescriptors.Find(x => x.attachedId == id).GetOriginal() as T;
         }
 
         /// <summary>
@@ -122,6 +120,7 @@ namespace QM_WeaponImporter
                         Logger.WriteToLog($"Iterating through {singleFile.Name}");
                         string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
                         foundParser.Parse(configItemContent);
+                        Logger.WriteToLog($"Finished parsing {singleFile.Name} in {path}");
                     }
                 }
                 Logger.WriteToLog($"Configuration success for {userConfig.rootFolder}");
@@ -129,7 +128,7 @@ namespace QM_WeaponImporter
             }
             catch (Exception e)
             {
-                Logger.WriteToLog($"Configuration failed for {userConfig.rootFolder}.\n{e.Message}\n{e.InnerException}", Logger.LogType.Error);
+                Logger.WriteToLog($"Configuration failed for {userConfig.rootFolder}.\n{e.Message}\n{e.StackTrace}", Logger.LogType.Error);
                 return false;
             }
         }
