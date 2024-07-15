@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using Newtonsoft.Json;
+using QM_WeaponImporter.Templates.Descriptors;
 
 namespace QM_WeaponImporter
 {
@@ -85,6 +86,10 @@ namespace QM_WeaponImporter
             var factionListExample = ExportableFactionList.GetExample();
             weaponSerialized = JsonConvert.SerializeObject(factionListExample);
             CreateFile(Path.Combine(rootPath, "example_factionConfig.json"), weaponSerialized);
+
+            var customItemContentDesc = new CustomItemContentDescriptor();
+            string customItemContentDescSerial = JsonConvert.SerializeObject(customItemContentDesc);
+            CreateFile(Path.Combine(rootPath, "example_CustomItemContentDescriptor.json"), customItemContentDescSerial);
         }
 
         public static void CreateGlobalConfig(string rootPath)

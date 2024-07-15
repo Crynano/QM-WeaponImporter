@@ -8,12 +8,21 @@ namespace QM_WeaponImporter
     [Serializable]
     public class ConfigTemplate
     {
+        /// <summary>
+        /// An absolute path to determine the root folder where assets are located.
+        /// </summary>
         public string rootFolder { get; set; }
+
+        /// <summary>
+        /// In relative pathing. (Relative to RootFolder)
+        /// </summary>
+        public string descriptorsPath { get; set; }
         public Dictionary<string, string> folderPaths { get; set; }
 
         public ConfigTemplate()
         {
             rootFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Replace("\\", "/");
+            descriptorsPath = "Assets/Descriptors";
             folderPaths = new Dictionary<string, string>
             {
                 { "meleeweapons", "Assets/Config/meleeweapons" },
@@ -27,9 +36,10 @@ namespace QM_WeaponImporter
             };
         }
 
-        public ConfigTemplate(string rootFolder, Dictionary<string, string> folderPaths)
+        public ConfigTemplate(string rootFolder, string descriptorsPath, Dictionary<string, string> folderPaths)
         {
             this.rootFolder = rootFolder;
+            this.descriptorsPath = descriptorsPath;
             this.folderPaths = folderPaths;
         }
     }

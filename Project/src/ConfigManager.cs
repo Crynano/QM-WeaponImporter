@@ -1,8 +1,5 @@
 using MGSC;
-using Newtonsoft.Json;
-using QM_WeaponImporter.Templates;
 using QM_WeaponImporter.Templates.Descriptors;
-using QM_WeaponImporter.Templates.Records;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,18 +19,23 @@ namespace QM_WeaponImporter
         private static List<IConfigParser> Parsers = new List<IConfigParser>();
 
         // How about we load descriptors first?
-        private static List<CustomItemContentDescriptor> itemDescriptors = new List<CustomItemContentDescriptor>()
-        {
-            new CustomBackpackDescriptor()
-            {
-                overridenRenderId = "medicbackpack",
-                iconSpritePath = "Assets/Images/medicbackpack.png",
-                smallIconSpritePath = "Assets/Images/medicbackpack.png",
-                shadowOnFloorSpritePath = "Assets/Images/medicbackpack.png"
-            }
-        };
+        private static List<CustomItemContentDescriptor> itemDescriptors = new List<CustomItemContentDescriptor>();
 
-        public static void LoadDefaultParsers()
+        private static void LoadDescriptors(ConfigTemplate userConfig)
+        {
+            Logger.WriteToLog($"Loading descriptors");
+            Parsers.Add(new TemplateParser<CustomItemContentDescriptor>("descriptorsPath", itemDescriptors.Add));
+            KeyValuePair<string, string> descriptorsEntry = new KeyValuePair<string, string>("descriptorsPath", userConfig.descriptorsPath);
+            if (!ParseFile(descriptorsEntry))
+            {
+                // If it doesn't work, interrupt
+                Logger.WriteToLog($"Interrupting Mod Load: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.", Logger.LogType.Error);
+                Logger.Flush();
+                throw new NullReferenceException($"Critical error: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
+            }
+        }
+
+        private static void LoadDefaultParsers()
         {
             // We can just copy the code they used xD.
             // TODO -- port this to the ImportParser
@@ -41,6 +43,13 @@ namespace QM_WeaponImporter
             Parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
             {
                 GameItemCreator.CreateMeleeWeapon(weaponTemplate);
+            }));
+            Parsers.Add(new NullableRecordParser<WeaponRecord>("gameweapons", delegate (WeaponRecord weaponTemplate)
+            {
+                //GameItemCreator.CreateMeleeWeapon(weaponTemplate);
+                //weaponTemplate.ContentDescriptor = GetDescriptor<WeaponDescriptor>(weaponTemplate.Id);
+                weaponTemplate.IsMelee = true;
+                MGSC.Data.Items.AddRecord(weaponTemplate.Id, weaponTemplate);
             }));
             // TODO -- port this to the ImportParser
             // ------- eliminate RangedWeaponTemplate
@@ -88,33 +97,34 @@ namespace QM_WeaponImporter
             Parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
             {
                 Logger.WriteToLog($"Backpack ID: [{backpackItem.Id}]");
-                backpackItem.ContentDescriptor = GetDescriptor<BackpackDescriptor>(backpackItem.Id);
-                MGSC.Data.Items.AddRecord(backpackItem.Id, backpackItem);
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(backpackItem.Id);
+                ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal();
+                /// Here we determine which values are needed for the backpack.
+                /// It won't magically just become an item, sadly.
+                backpackItem.ContentDescriptor = itemContentDescriptor;
+                if (backpackItem.ContentDescriptor != null)
+                {
+                    MGSC.Data.Items.AddRecord(backpackItem.Id, backpackItem);
+                }
+                else
+                {
+                    Logger.WriteToLog($"Backpack {backpackItem.Id} could not be loaded because descriptor is null.", Logger.LogType.Warning);
+                }
             }));
-        }
-
-        public static T GetDescriptor<T>(string id) where T : ItemContentDescriptor
-        {
-            return itemDescriptors.Find(x => x.attachedId == id).GetOriginal() as T;
-        }
-
-        /// <summary>
-        /// Modder can use this function to add custom data parsers.
-        /// </summary>
-        /// <param name="userTemplate"></param>
-        public static void AddParser(IConfigParser userTemplate)
-        {
-            Parsers.Add(userTemplate);
         }
 
         // Create the global config in the assembly folder.
         // You only send the config over, then everything else is automatic.
         public static bool ImportConfig(ConfigTemplate userConfig)
         {
+            Logger.WriteToLog($"Starting import config from: {userConfig.rootFolder}");
+            rootFolder = userConfig.rootFolder;
+            // This must include the Import.
+            LoadDescriptors(userConfig);
+            LoadDefaultParsers();
             try
             {
-                Logger.WriteToLog($"Starting import config from: {userConfig.rootFolder}");
-                rootFolder = userConfig.rootFolder;
+                
                 if (rootFolder == null || rootFolder.Equals(string.Empty))
                 {
                     Logger.WriteToLog($"Root Folder in global config file is empty.", Logger.LogType.Error);
@@ -129,28 +139,7 @@ namespace QM_WeaponImporter
                 Logger.WriteToLog($"Iterating through folders");
                 foreach (var path in userConfig.folderPaths)
                 {
-                    string folderPath = Path.Combine(rootFolder, path.Value);
-                    if (!Directory.Exists(folderPath))
-                    {
-                        Logger.WriteToLog($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.", Logger.LogType.Warning);
-                        continue;
-                    }
-                    var foundParser = Parsers.Find(x => x.Identifier.Equals(path.Key.ToLower()));
-                    if (foundParser == null)
-                    {
-                        Logger.WriteToLog($"No parser exists for [{path.Key}]", Logger.LogType.Warning);
-                        continue;
-                    }
-                    Logger.WriteToLog($"Checking for {path}");
-                    DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
-                    FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
-                    foreach (FileInfo singleFile in files)
-                    {
-                        Logger.WriteToLog($"Iterating through {singleFile.Name}");
-                        string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
-                        foundParser.Parse(configItemContent);
-                        Logger.WriteToLog($"Finished parsing {singleFile.Name} in {path}");
-                    }
+                    if (!ParseFile(path)) continue;
                 }
                 Logger.WriteToLog($"Configuration success for {userConfig.rootFolder}");
                 return true;
@@ -162,39 +151,49 @@ namespace QM_WeaponImporter
             }
         }
 
-        //private static WeaponTemplate TypeToClass(WeaponTemplate type, string content)
-        //{
-        //    switch (type)
-        //    {
-        //        case MeleeWeaponTemplate:
-        //            // DAMN THIS IS ALLOWED!
-        //            return DynamicDeserializer<MeleeWeaponTemplate>(content);
-        //        case RangedWeaponTemplate:
-        //            return DynamicDeserializer<RangedWeaponTemplate>(content);
-        //        default:
-        //            return null;
-        //    }
-        //}
-
-        private static WeaponTemplate TypeToClass(string type, string content)
+        private static bool ParseFile(KeyValuePair<string, string> relativeFolderPath)
         {
-            switch (type)
+            string folderPath = Path.Combine(rootFolder, relativeFolderPath.Value);
+            if (!Directory.Exists(folderPath))
             {
-                case "meleeweapons":
-                    return DynamicDeserializer<MeleeWeaponTemplate>(content);
-                case "rangedweapons":
-                    return DynamicDeserializer<RangedWeaponTemplate>(content);
-                default:
-                    Logger.WriteToLog($"No serializer exists for this weapon {type}");
-                    return null;
+                Logger.WriteToLog($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.", Logger.LogType.Warning);
+                return false;
             }
+            Logger.WriteToLog($"Searching for {folderPath}");
+            var foundParser = Parsers.Find(x => x.Identifier.ToLower().Equals(relativeFolderPath.Key.ToLower()));
+            if (foundParser == null)
+            {
+                Logger.WriteToLog($"No parser exists for [{relativeFolderPath.Key}]", Logger.LogType.Warning);
+                return false;
+            }
+            Logger.WriteToLog($"Checking for {relativeFolderPath}");
+            DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
+            FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
+            foreach (FileInfo singleFile in files)
+            {
+                Logger.WriteToLog($"Iterating through {singleFile.Name}");
+                string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
+                foundParser.Parse(configItemContent);
+                Logger.WriteToLog($"Finished parsing {singleFile.Name} in {relativeFolderPath}");
+            }
+            return true;
         }
 
-        private static T DynamicDeserializer<T>(string text)
+        #region Utils
+        public static CustomItemContentDescriptor GetDescriptor(string id)
         {
-            var result = JsonConvert.DeserializeObject<T>(text);
-            Logger.WriteToLog($"{result}");
-            return result;
+            return itemDescriptors.Find(x => x.attachedId.Equals(id));
         }
+
+        /// <summary>
+        /// Modder can use this function to add custom data parsers.
+        /// </summary>
+        /// <param name="userTemplate"></param>
+        public static void AddParser(IConfigParser userTemplate)
+        {
+            Parsers.Add(userTemplate);
+        }
+
+        #endregion
     }
 }

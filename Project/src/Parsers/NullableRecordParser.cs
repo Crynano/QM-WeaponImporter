@@ -1,10 +1,9 @@
 ﻿using Newtonsoft.Json;
 using System;
-using MGSC;
 using Newtonsoft.Json.Serialization;
 
 namespace QM_WeaponImporter;
-public class NullableRecordParser<T> : IConfigParser where T : ConfigTableRecord
+public class NullableRecordParser<T> : IConfigParser where T : class, new()
 {
     string identifier;
     Action<T> OnParsed;
@@ -18,7 +17,6 @@ public class NullableRecordParser<T> : IConfigParser where T : ConfigTableRecord
 
     public void Parse(string data)
     {
-        Logger.WriteToLog($"Data collected is {data}");
         JsonSerializerSettings settings = new JsonSerializerSettings()
         {
             ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
