@@ -6,7 +6,6 @@ using QM_WeaponImporter.Templates.Records;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
 
 namespace QM_WeaponImporter
 {
@@ -37,25 +36,55 @@ namespace QM_WeaponImporter
         public static void LoadDefaultParsers()
         {
             // We can just copy the code they used xD.
+            // TODO -- port this to the ImportParser
+            // ------- eliminate MeleeWeaponTemplate
             Parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
             {
                 GameItemCreator.CreateMeleeWeapon(weaponTemplate);
             }));
+            // TODO -- port this to the ImportParser
+            // ------- eliminate RangedWeaponTemplate
             Parsers.Add(new TemplateParser<RangedWeaponTemplate>("rangedweapons", delegate (RangedWeaponTemplate weaponTemplate)
             {
                 GameItemCreator.CreateRangedWeapon(weaponTemplate);
             }));
-            Parsers.Add(new TemplateParser<ItemTransformTemplate>("itemtransforms", delegate (ItemTransformTemplate itemTransformRecord)
+            Parsers.Add(new ImportParser<ItemTransformationRecord>("itemtransforms", delegate (ItemTransformationRecord itemTransformRecord)
             {
-                ItemTransformationRecord myTransform = new ItemTransformationRecord();
-                myTransform = myTransform.Clone(itemTransformRecord.id);
-                myTransform.OutputItems = itemTransformRecord.outputItems;
-                MGSC.Data.ItemTransformation.AddRecord(myTransform.Id, myTransform);
+                MGSC.Data.ItemTransformation.AddRecord(itemTransformRecord.Id, itemTransformRecord);
             }));
+            Parsers.Add(new ImportParser<ItemProduceReceipt>("itemreceipts", delegate (ItemProduceReceipt itemProduceReceiptRecord)
+            {
+                MGSC.Data.ProduceReceipts.Add(itemProduceReceiptRecord);
+            }));
+            Parsers.Add(new ImportParser<WorkbenchReceiptRecord>("workbenchreceipts", delegate (WorkbenchReceiptRecord itemWorkbenchReceiptRecord)
+            {
+                MGSC.Data.WorkbenchReceipts.Add(itemWorkbenchReceiptRecord);
+                itemWorkbenchReceiptRecord.GenerateId();
+            }));
+            Parsers.Add(new ImportParser<DatadiskRecord>("datadisks", delegate (DatadiskRecord datadiskRecord)
+            {
+                CompositeItemRecord itemRecord = (CompositeItemRecord)MGSC.Data.Items.GetRecord(datadiskRecord.Id);
+                if (itemRecord != null) // Append to existing chip if already exists
+                {
+                    DatadiskRecord dataChip = itemRecord.GetRecord<DatadiskRecord>();
+                    dataChip.UnlockIds.AddRange(datadiskRecord.UnlockIds);
+                }
+                else // Create new chip if doesn't exist
+                {
+                    Logger.WriteToLog($"Creating new datachips not implemented. Chip id {datadiskRecord.Id}");
+                    // TODO -- new chips have a descriptor attached, not sure how to do this yet
+                    //MGSC.Data.Items.AddRecord(datadiskRecord.Id, datadiskRecord);
+                    //datadiskRecord.ContentDescriptor = descs.GetDescriptor(datadiskRecord.Id);
+                }
+            }));
+            // TODO -- port this to the ImportParser
+            // ------- eliminate FactionTemplate
             Parsers.Add(new TemplateParser<FactionTemplate>("factionitems", delegate (FactionTemplate factionTemplate)
             {
                 GameItemCreator.AddItemsToFactions(factionTemplate);
             }));
+            // TODO -- port this to the ImportParser
+            // ------- reference datadiskRecord parses for completing backpack implementation
             Parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
             {
                 Logger.WriteToLog($"Backpack ID: [{backpackItem.Id}]");
