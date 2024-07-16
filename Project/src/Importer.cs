@@ -4,6 +4,8 @@ using System.Reflection;
 using UnityEngine;
 using Newtonsoft.Json;
 using QM_WeaponImporter.Templates.Descriptors;
+using MGSC;
+using Newtonsoft.Json.Serialization;
 
 namespace QM_WeaponImporter
 {

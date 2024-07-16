@@ -40,16 +40,30 @@ namespace QM_WeaponImporter
             // We can just copy the code they used xD.
             // TODO -- port this to the ImportParser
             // ------- eliminate MeleeWeaponTemplate
+            Parsers.Add(new NullableRecordParser<AmmoRecord>("ammo", delegate (AmmoRecord ammoItem)
+            {
+                Logger.WriteToLog($"Parsing [{ammoItem.Id}]");
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(ammoItem.Id);
+                Data.Descriptors.TryGetValue("ammo", out DescriptorsCollection ammoDescriptors);
+                AmmoDescriptor baseAmmo = ammoDescriptors.GetDescriptor(customItemDescriptor.baseItemId) as AmmoDescriptor;
+                ItemContentDescriptor originalDescriptor = customItemDescriptor.GetOriginal();
+                AmmoDescriptor ammoContentDescriptor = new AmmoDescriptor();
+                if (baseAmmo != null)
+                {
+                    ammoContentDescriptor._bullet = baseAmmo._bullet;
+                    ammoContentDescriptor._meleeMakeBloodDecal = baseAmmo._meleeMakeBloodDecal;
+                    ammoContentDescriptor._gibs = baseAmmo._gibs;
+                }
+                // Use base icons if user provided no icons.
+                ammoContentDescriptor._icon = originalDescriptor._icon == null && baseAmmo != null ? baseAmmo._icon : originalDescriptor._icon;
+                ammoContentDescriptor._smallIcon = originalDescriptor._smallIcon == null && baseAmmo != null ? baseAmmo._smallIcon : originalDescriptor._smallIcon;
+                ammoContentDescriptor._shadow = originalDescriptor._shadow == null && baseAmmo != null ? baseAmmo._shadow : originalDescriptor._icon;
+                ammoItem.ContentDescriptor = ammoContentDescriptor;
+                MGSC.Data.Items.AddRecord(ammoItem.Id, ammoItem);
+            }));
             Parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
             {
                 GameItemCreator.CreateMeleeWeapon(weaponTemplate);
-            }));
-            Parsers.Add(new NullableRecordParser<WeaponRecord>("gameweapons", delegate (WeaponRecord weaponTemplate)
-            {
-                //GameItemCreator.CreateMeleeWeapon(weaponTemplate);
-                //weaponTemplate.ContentDescriptor = GetDescriptor<WeaponDescriptor>(weaponTemplate.Id);
-                weaponTemplate.IsMelee = true;
-                MGSC.Data.Items.AddRecord(weaponTemplate.Id, weaponTemplate);
             }));
             // TODO -- port this to the ImportParser
             // ------- eliminate RangedWeaponTemplate
@@ -111,6 +125,7 @@ namespace QM_WeaponImporter
                     Logger.WriteToLog($"Backpack {backpackItem.Id} could not be loaded because descriptor is null.", Logger.LogType.Warning);
                 }
             }));
+
         }
 
         // Create the global config in the assembly folder.
@@ -124,7 +139,7 @@ namespace QM_WeaponImporter
             LoadDefaultParsers();
             try
             {
-                
+
                 if (rootFolder == null || rootFolder.Equals(string.Empty))
                 {
                     Logger.WriteToLog($"Root Folder in global config file is empty.", Logger.LogType.Error);

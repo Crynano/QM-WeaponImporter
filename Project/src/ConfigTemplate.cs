@@ -25,6 +25,7 @@ namespace QM_WeaponImporter
             descriptorsPath = "Assets/Descriptors";
             folderPaths = new Dictionary<string, string>
             {
+                { "ammo", "Assets/Config/ammo" },
                 { "meleeweapons", "Assets/Config/meleeweapons" },
                 { "rangedweapons", "Assets/Config/rangedweapons" },
                 { "itemtransforms", "Assets/Config/itemtransforms" },
@@ -45,9 +46,12 @@ namespace QM_WeaponImporter
     }
 
     // Future updates, maybe sync it with this.
-    public enum GameItemType
+    public enum LoadOrder
     {
+        // Descriptors
+        ammo,
+        rangedweapons,
         meleeweapons,
-        rangedweapons
+        // Everything else.
     }
 }
