@@ -17,12 +17,16 @@ namespace QM_WeaponImporter
         /// In relative pathing. (Relative to RootFolder)
         /// </summary>
         public string descriptorsPath { get; set; }
+        public Dictionary<string, string> localizationPaths { get; set; }
         public Dictionary<string, string> folderPaths { get; set; }
 
         public ConfigTemplate()
         {
             rootFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Replace("\\", "/");
             descriptorsPath = "Assets/Descriptors";
+            localizationPaths = new Dictionary<string, string> {
+                { "item", "Assets/localizations/item_localization.json" }
+            };
             folderPaths = new Dictionary<string, string>
             {
                 { "meleeweapons", "Assets/Config/meleeweapons" },
@@ -36,10 +40,11 @@ namespace QM_WeaponImporter
             };
         }
 
-        public ConfigTemplate(string rootFolder, string descriptorsPath, Dictionary<string, string> folderPaths)
+        public ConfigTemplate(string rootFolder, string descriptorsPath, Dictionary<string, string> localizationPaths, Dictionary<string, string> folderPaths)
         {
             this.rootFolder = rootFolder;
             this.descriptorsPath = descriptorsPath;
+            this.localizationPaths = localizationPaths;
             this.folderPaths = folderPaths;
         }
     }

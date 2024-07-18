@@ -34,8 +34,6 @@ namespace QM_WeaponImporter
             MeleeWeaponTemplate meleeWeapon = new MeleeWeaponTemplate()
             {
                 id = "army_knife",
-                name = "Claw Knife",
-                description = "An army knife",
                 price = 100,
                 weight = 0.7f,
                 inventoryWidth = 2,

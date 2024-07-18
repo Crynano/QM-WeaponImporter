@@ -1,4 +1,5 @@
 using MGSC;
+using Newtonsoft.Json;
 using QM_WeaponImporter.Templates.Descriptors;
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,39 @@ namespace QM_WeaponImporter
                 Logger.WriteToLog($"Interrupting Mod Load: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.", Logger.LogType.Error);
                 Logger.Flush();
                 throw new NullReferenceException($"Critical error: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
+            }
+        }
+
+        private static bool LoadLocalization(ConfigTemplate userConfig)
+        {
+            Dictionary<string, string> localPaths = userConfig.localizationPaths;
+            if (localPaths != null || localPaths.Count > 0)
+            {
+                foreach (KeyValuePair<string, string> filePath in localPaths)
+                {
+                    try
+                    {
+                        string content = File.ReadAllText(Path.Combine(rootFolder, filePath.Value));
+                        LocalizationTemplate json = JsonConvert.DeserializeObject<LocalizationTemplate>(content);
+
+                        // for now with the mod being item focused, the template is only concerned with name and shortdesc
+                        // this can be expanded later
+                        GameItemCreator.AddLocalization(filePath.Key, "name", json.name);
+                        GameItemCreator.AddLocalization(filePath.Key, "shortdesc", json.shortdesc);
+
+                        Logger.WriteToLog($"Localization loaded successfully for {filePath.Value}");
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.WriteToLog($"Failed for {filePath.Value}.\n{e.Message}\n{e.StackTrace}", Logger.LogType.Error);
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else {
+                Logger.WriteToLog($"No Localization file path set.");
+                return false;
             }
         }
 
@@ -137,6 +171,7 @@ namespace QM_WeaponImporter
                 }
 
                 Logger.WriteToLog($"Iterating through folders");
+                LoadLocalization(userConfig);
                 foreach (var path in userConfig.folderPaths)
                 {
                     if (!ParseFile(path)) continue;
@@ -150,6 +185,7 @@ namespace QM_WeaponImporter
                 return false;
             }
         }
+    }
 
         private static bool ParseFile(KeyValuePair<string, string> relativeFolderPath)
         {
