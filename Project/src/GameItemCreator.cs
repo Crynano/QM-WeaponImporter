@@ -1,4 +1,4 @@
-﻿using MGSC;
+using MGSC;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,7 +27,7 @@ namespace QM_WeaponImporter
                 }
                 SetCommonProperties(ref myWeapon, userWeapon);
                 SetDescriptorProperties(ref myWeapon, userWeapon);
-                myWeapon.DefineClassTraits();
+                //myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
             }
@@ -48,7 +48,7 @@ namespace QM_WeaponImporter
                 ConfigureMeleeWeapon(ref myWeapon, userWeapon);
                 SetCommonProperties(ref myWeapon, userWeapon);
                 SetDescriptorProperties(ref myWeapon, userWeapon);
-                myWeapon.DefineClassTraits();
+                //myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
             }
@@ -69,7 +69,7 @@ namespace QM_WeaponImporter
                 ConfigureRangedWeapon(ref myWeapon, userWeapon);
                 SetCommonProperties(ref myWeapon, userWeapon);
                 SetDescriptorProperties(ref myWeapon, userWeapon);
-                myWeapon.DefineClassTraits();
+                //myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
             }
