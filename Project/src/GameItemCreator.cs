@@ -1,5 +1,4 @@
 ﻿using MGSC;
-using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -116,7 +115,6 @@ namespace QM_WeaponImporter
             List<Muzzle> singleMuzzle = [.. foundMuzzles];
             GameObject muzzleGo = new GameObject("Test Muzzle");
             Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
-            muzzleGo.AddComponent<Light2D>();
             muzzle._additLightIntencityMult = 1f;
             muzzle._muzzleIntensityCurve = new AnimationCurve()
             {

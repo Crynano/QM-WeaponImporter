@@ -23,6 +23,7 @@ public class ImportParser<T> : IConfigParser where T : class, new()
         jsonSettings.ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor;
         var resolver = new DefaultContractResolver();
         resolver.DefaultMembersSearchFlags = resolver.DefaultMembersSearchFlags | BindingFlags.NonPublic;
+        jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
         jsonSettings.ContractResolver = resolver;
 
         Logger.WriteToLog($"Parsing {typeof(T).ToString()}");

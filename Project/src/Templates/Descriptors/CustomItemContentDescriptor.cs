@@ -7,6 +7,7 @@ public class CustomItemContentDescriptor
 {
     public CustomItemContentDescriptor() { }
     public string attachedId { get; set; }
+    public string baseItemId { get; set; }
     public string overridenRenderId { get; set; }
     public string iconSpritePath { get; set; }
     public string smallIconSpritePath { get; set; }
@@ -24,7 +25,6 @@ public class CustomItemContentDescriptor
     {
         Logger.WriteToLog($"Returning Original from Parent!");
         ItemContentDescriptor defaultReturn = ScriptableObject.CreateInstance<ItemContentDescriptor>();
-        defaultReturn.name = attachedId;
         defaultReturn._overridenRenderId = overridenRenderId;
         defaultReturn._icon = Importer.LoadNewSprite(iconSpritePath);
         defaultReturn._smallIcon = Importer.LoadNewSprite(iconSpritePath);
