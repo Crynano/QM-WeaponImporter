@@ -10,13 +10,6 @@ namespace QM_WeaponImporter
 {
     public static class GameItemCreator
     {
-        private static Dictionary<string, string> StoredDescriptions = new Dictionary<string, string>();
-
-        public static void Init()
-        {
-            StoredDescriptions = new Dictionary<string, string>();
-        }
-
         public static bool CreateWeapon(WeaponTemplate userWeapon)
         {
             try
