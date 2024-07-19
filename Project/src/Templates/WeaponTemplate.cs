@@ -68,8 +68,6 @@ namespace QM_WeaponImporter
         /// Generic Properties
         /// </summary>
         public new string id { get; set; }
-        public string name { get; set; }
-        public string description { get; set; }
         public int inventoryWidth{ get; set; }
         public string weaponClass{ get; set; }
         public string weaponSubClass{ get; set; }

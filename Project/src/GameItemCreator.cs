@@ -1,47 +1,14 @@
-﻿using MGSC;
-using QM_WeaponImporter.Templates;
+using MGSC;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering.Universal;
+using static MGSC.Localization;
 
 namespace QM_WeaponImporter
 {
     public static class GameItemCreator
     {
-        private static Dictionary<string, string> StoredDescriptions = new Dictionary<string, string>();
-
-        public static void Init()
-        {
-            StoredDescriptions = new Dictionary<string, string>();
-            Localization.Instance.OnLangChanged += Instance_OnLangChanged;
-        }
-
-        public static bool CreateConfigTableEntry(ItemTransformTemplate entry)
-        {
-            // TODO: need a way to make this generic
-            try
-            {
-                Logger.WriteToLog($"Creating data entry with ID: {entry.id}");
-                if (entry.GetType() == typeof(ItemTransformTemplate))
-                {
-                    // Item Transform Record
-                    ItemTransformationRecord myTransform = new ItemTransformationRecord();
-                    myTransform = myTransform.Clone(entry.id); // had to clone to set the id
-                    myTransform.OutputItems = entry.outputItems;
-                    MGSC.Data.ItemTransformation.AddRecord(myTransform.Id, myTransform);
-                }
-
-                return true;
-            }
-            catch (Exception e)
-            {
-                Logger.WriteToLog($"Weapon [{entry.id}] couldn't be added.\n{e.Message}\n{e.Source}");
-                Logger.FlushAdditive();
-                return false;
-            }
-        }
-
         public static bool CreateWeapon(WeaponTemplate userWeapon)
         {
             try
@@ -60,7 +27,7 @@ namespace QM_WeaponImporter
                 }
                 SetCommonProperties(ref myWeapon, userWeapon);
                 SetDescriptorProperties(ref myWeapon, userWeapon);
-                myWeapon.DefineClassTraits();
+                //myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
             }
@@ -81,7 +48,7 @@ namespace QM_WeaponImporter
                 ConfigureMeleeWeapon(ref myWeapon, userWeapon);
                 SetCommonProperties(ref myWeapon, userWeapon);
                 SetDescriptorProperties(ref myWeapon, userWeapon);
-                myWeapon.DefineClassTraits();
+                //myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
             }
@@ -102,7 +69,7 @@ namespace QM_WeaponImporter
                 ConfigureRangedWeapon(ref myWeapon, userWeapon);
                 SetCommonProperties(ref myWeapon, userWeapon);
                 SetDescriptorProperties(ref myWeapon, userWeapon);
-                myWeapon.DefineClassTraits();
+                //myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
             }
@@ -148,7 +115,6 @@ namespace QM_WeaponImporter
             List<Muzzle> singleMuzzle = [.. foundMuzzles];
             GameObject muzzleGo = new GameObject("Test Muzzle");
             Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
-            muzzleGo.AddComponent<Light2D>();
             muzzle._additLightIntencityMult = 1f;
             muzzle._muzzleIntensityCurve = new AnimationCurve()
             {
@@ -216,7 +182,6 @@ namespace QM_WeaponImporter
             }
 
             myWeapon.ContentDescriptor = myWeaponDescriptor;
-            AddLocalization(userWeapon);
             Logger.WriteToLog($"Weapon Descriptor for [{userWeapon.id}] has been added successfully!");
         }
 
@@ -358,23 +323,28 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static void AddLocalization(WeaponTemplate userWeapon)
+        // writes to the localization db entries as passed
+        // entries are denoted type.id.group 
+        // ex: item.weapon_id.name , item.weapon_id.shortdesc
+        public static void AddLocalization(string type, string group, Dictionary<string, Dictionary<string, string>> localization)
         {
-            // TODO Consider other languages. And add it to the JSON somehow
-            Localization.Instance.currentDict.Add($"item.{userWeapon.id}.name", userWeapon.name);
-            Localization.Instance.currentDict.Add($"item.{userWeapon.id}.shortdesc", userWeapon.description);
-            StoredDescriptions.Add($"item.{userWeapon.id}.name", userWeapon.name);
-            StoredDescriptions.Add($"item.{userWeapon.id}.shortdesc", userWeapon.description);
-        }
-
-        private static void Instance_OnLangChanged()
-        {
-            // Here we add to the current database (if not already in) our text!
-            // Or maybe not yet?
-            foreach (var entry in StoredDescriptions)
+            Dictionary<Lang, Dictionary<string, string>> localizationDb = MGSC.Localization.Instance.db;
+            foreach (KeyValuePair<string, Dictionary<string, string>> itemEntry in localization)
             {
-                if (!Localization.Instance.currentDict.ContainsKey(entry.Key))
-                    Localization.Instance.currentDict.Add(entry.Key, entry.Value);
+                foreach (KeyValuePair<string, string> locals in itemEntry.Value)
+                {
+                    MGSC.Localization.Lang enumKey;
+                    string entryStringId;
+                    if (MGSC.Localization.Lang.TryParse(locals.Key, out enumKey))
+                    {
+                        entryStringId = type + "." + itemEntry.Key + "." + group;
+                        if (!localizationDb[enumKey].ContainsKey(entryStringId))
+                        {
+                            localizationDb[enumKey].Add(entryStringId, locals.Value);
+                        }
+
+                    }
+                }
             }
         }
 

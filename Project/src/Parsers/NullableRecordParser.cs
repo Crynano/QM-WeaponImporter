@@ -1,9 +1,9 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
-using MGSC;
+using Newtonsoft.Json.Serialization;
 
 namespace QM_WeaponImporter;
-public class NullableRecordParser<T> : IConfigParser where T : ConfigTableRecord
+public class NullableRecordParser<T> : IConfigParser where T : class, new()
 {
     string identifier;
     Action<T> OnParsed;
@@ -17,14 +17,16 @@ public class NullableRecordParser<T> : IConfigParser where T : ConfigTableRecord
 
     public void Parse(string data)
     {
-        Logger.WriteToLog($"Data passed is {data}");
         JsonSerializerSettings settings = new JsonSerializerSettings()
         {
+            ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
             Formatting = Formatting.Indented,
             NullValueHandling = NullValueHandling.Ignore
         };
-        T instance = JsonConvert.DeserializeObject<T>(data, settings);
-        Logger.WriteToLog($"Data passed is {instance}");
+        var resolver = new DefaultContractResolver();
+        resolver.DefaultMembersSearchFlags = resolver.DefaultMembersSearchFlags | System.Reflection.BindingFlags.NonPublic;
+        settings.ContractResolver = resolver;
+        T instance = JsonConvert.DeserializeObject<T>(data, settings) as T;
         OnParsed?.Invoke(instance);
     }
 }

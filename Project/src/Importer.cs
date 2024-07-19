@@ -3,6 +3,8 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using Newtonsoft.Json;
+using QM_WeaponImporter.Templates.Descriptors;
+using QM_WeaponImporter.Templates;
 
 namespace QM_WeaponImporter
 {
@@ -11,9 +13,6 @@ namespace QM_WeaponImporter
         // Code recovered from C68.
         // https://forum.unity.com/threads/generating-sprites-dynamically-from-png-or-jpeg-files-in-c.343735/
         // Modded to use ImageConversion on Texture creation.
-
-        public const string ItemsFileName = "import_weapons.json";
-        public const string FactionsFileName = "import_factionLoot.json";
 
         internal const string GlobalConfigName = "global_config.json";
 
@@ -66,25 +65,19 @@ namespace QM_WeaponImporter
         /// <param name="rootPath"></param>
         public static void CreateExampleConfigFiles(string rootPath)
         {
-            // Items file
-            if (!Directory.Exists(rootPath)) 
-            {
-                throw new NullReferenceException($"Directory {rootPath} does not exist.");
-            }
-            // Examples
-            var weaponListExample = MeleeWeaponTemplate.GetExample();
-            string weaponSerialized = JsonConvert.SerializeObject(weaponListExample);
-            CreateFile(Path.Combine(rootPath, "example_meleeWeapon.json"), weaponSerialized);
+            CreateExampleFile(new BulletTemplate(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(new LocalizationTemplate(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(MeleeWeaponTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(RangedWeaponTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(FactionTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(new CustomItemContentDescriptor(), Path.Combine(rootPath, "Examples"));
+        }
 
-            // Examples
-            var rangedWeaponExample = RangedWeaponTemplate.GetExample();
-            weaponSerialized = JsonConvert.SerializeObject(rangedWeaponExample);
-            CreateFile(Path.Combine(rootPath, "example_rangedWeapon.json"), weaponSerialized);
-
-            // Factions file
-            var factionListExample = ExportableFactionList.GetExample();
-            weaponSerialized = JsonConvert.SerializeObject(factionListExample);
-            CreateFile(Path.Combine(rootPath, "example_factionConfig.json"), weaponSerialized);
+        private static void CreateExampleFile<T>(T objectType, string folderPath)
+        {
+            string content = JsonConvert.SerializeObject(objectType, Formatting.Indented);
+            Directory.CreateDirectory(folderPath);
+            CreateFile(Path.Combine(folderPath, $"example_{objectType.GetType().Name}.json"), content);
         }
 
         public static void CreateGlobalConfig(string rootPath)
@@ -113,19 +106,6 @@ namespace QM_WeaponImporter
             CreateFile(Path.Combine(rootFolder, GlobalConfigName), JsonConvert.SerializeObject(userConfig, Formatting.Indented));
         }
 
-        // Do not load images with this
-        public static T Load<T>(string path)
-        {
-            string fullPath = Path.Combine(ConfigManager.rootFolder, path);
-            if (!File.Exists(fullPath))
-            {
-                throw new NullReferenceException($"Path \"{fullPath}\" for Item of type {typeof(T).ToString()} is null.");
-            }
-            string loadedString = File.ReadAllText(fullPath);
-            T loadedObject = JsonConvert.DeserializeObject<T>(loadedString);
-            return loadedObject;
-        }
-
         public static ConfigTemplate GetGlobalConfig(string path)
         {
             // Well, time to WORKAROUND
@@ -151,22 +131,6 @@ namespace QM_WeaponImporter
             }
             Logger.WriteToLog($"Creating file {filePath}");
             File.WriteAllText(filePath, content);
-        }
-
-        public static T ImportUserWeapons<T>(string fileName)
-        {
-            string configPath = Path.Combine(AssemblyFolder, fileName);
-            if (File.Exists(configPath))
-            {
-                // Read all and parse it. Does it parse right?
-                var json = File.ReadAllText(configPath);
-                T userConfig = JsonConvert.DeserializeObject<T>(json);
-                return userConfig;
-            }
-            else
-            {
-                throw new NullReferenceException($"{fileName} does not exist!");
-            }
         }
     }
 }
