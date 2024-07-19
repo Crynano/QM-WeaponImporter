@@ -33,7 +33,7 @@ namespace QM_WeaponImporter
                         {
                             ContentIds = new List<string>()
                             {
-                                "nano_weapon"
+                                "weapon_id"
                             },
                             Points = 20,
                             RewardWeight = 4,
@@ -54,7 +54,7 @@ namespace QM_WeaponImporter
                         {
                             ContentIds = new List<string>()
                             {
-                                "nano_weapon"
+                                "weapon_id"
                             },
                             Points = 20,
                             RewardWeight = 4,
@@ -75,7 +75,7 @@ namespace QM_WeaponImporter
                         {
                             ContentIds = new List<string>()
                             {
-                                "nano_weapon"
+                                "weapon_id"
                             },
                             Points = 20,
                             RewardWeight = 4,
@@ -87,7 +87,24 @@ namespace QM_WeaponImporter
             },
                 Units = new List<Items>()
                 {
-                    // ???
+                    new Items()
+                {
+                    difficulty = 1,
+                    contentRecords = new List<MGSC.ContentDropRecord>()
+                    {
+                        new MGSC.ContentDropRecord()
+                        {
+                            ContentIds = new List<string>()
+                            {
+                                "weapon_id"
+                            },
+                            Points = 20,
+                            RewardWeight = 4,
+                            TechLevel = 1,
+                            Weight = 4
+                        }
+                    }
+                }
                 }
             };
 

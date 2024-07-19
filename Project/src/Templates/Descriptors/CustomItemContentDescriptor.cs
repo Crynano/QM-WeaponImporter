@@ -6,12 +6,12 @@ namespace QM_WeaponImporter.Templates.Descriptors;
 public class CustomItemContentDescriptor
 {
     public CustomItemContentDescriptor() { }
-    public string attachedId { get; set; }
-    public string baseItemId { get; set; }
-    public string overridenRenderId { get; set; }
-    public string iconSpritePath { get; set; }
-    public string smallIconSpritePath { get; set; }
-    public string shadowOnFloorSpritePath { get; set; }
+    public string attachedId { get; set; } = string.Empty;
+    public string baseItemId { get; set; } = string.Empty;
+    public string overridenRenderId { get; set; } = string.Empty;
+    public string iconSpritePath { get; set; } = string.Empty;
+    public string smallIconSpritePath { get; set; } = string.Empty;
+    public string shadowOnFloorSpritePath { get; set; } = string.Empty;
 
     public Dictionary<string, string[]> customParameters = new Dictionary<string, string[]>()
     {

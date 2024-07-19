@@ -63,7 +63,8 @@ namespace QM_WeaponImporter
                 }
                 return true;
             }
-            else {
+            else
+            {
                 Logger.WriteToLog($"No Localization file path set.");
                 return false;
             }
@@ -200,7 +201,7 @@ namespace QM_WeaponImporter
                 return false;
             }
         }
-    }
+
 
         private static bool ParseFile(KeyValuePair<string, string> relativeFolderPath)
         {
@@ -246,5 +247,6 @@ namespace QM_WeaponImporter
         }
 
         #endregion
+
     }
 }
