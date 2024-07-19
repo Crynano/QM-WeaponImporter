@@ -30,8 +30,6 @@ namespace QM_WeaponImporter
             RangedWeaponTemplate rangedWeapon = new RangedWeaponTemplate()
             {
                 id = "army_pistol",
-                name = "Army Pistol",
-                description = "Army Pistol Description",
                 price = 100,
                 weight = 2f,
                 inventoryWidth = 2,

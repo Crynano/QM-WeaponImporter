@@ -68,8 +68,6 @@ namespace QM_WeaponImporter
         /// Generic Properties
         /// </summary>
         public new string id { get; set; }
-        public string name { get; set; }
-        public string description { get; set; }
         public int inventoryWidth{ get; set; }
         public string weaponClass{ get; set; }
         public string weaponSubClass{ get; set; }
@@ -100,6 +98,7 @@ namespace QM_WeaponImporter
         /// WeaponDescriptorParameters
         /// </summary>
         public string grip { get; set; }
+        // This properties get moved to another descriptors
         public string randomAttackSoundBank { get; set; }
         public string randomDryShotSoundBank { get; set; }
         public string randomFailedAttackSoundBank { get; set; }
