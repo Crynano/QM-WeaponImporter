@@ -170,6 +170,7 @@ namespace QM_WeaponImporter
         {
             Logger.WriteToLog($"Starting import config from: {userConfig.rootFolder}");
             rootFolder = userConfig.rootFolder;
+            Importer.imagePixelScaling = Mathf.Max(1f, userConfig.imagePixelScale);
             // This must include the Import.
             LoadDescriptors(userConfig);
             LoadDefaultParsers();

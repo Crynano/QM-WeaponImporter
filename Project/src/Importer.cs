@@ -5,6 +5,7 @@ using UnityEngine;
 using Newtonsoft.Json;
 using QM_WeaponImporter.Templates.Descriptors;
 using QM_WeaponImporter.Templates;
+using Newtonsoft.Json.Serialization;
 
 namespace QM_WeaponImporter
 {
@@ -14,22 +15,36 @@ namespace QM_WeaponImporter
         // https://forum.unity.com/threads/generating-sprites-dynamically-from-png-or-jpeg-files-in-c.343735/
         // Modded to use ImageConversion on Texture creation.
 
+        internal static float _imagePixelScaling = 200f;
+        public static float imagePixelScaling
+        {
+            get { return _imagePixelScaling; }
+            set
+            {
+                if (value < 100f)
+                {
+                    Logger.WriteToLog($"imagePixelScaling is being set below 100. Issues may occur.\nValue: {value}", Logger.LogType.Warning);
+                }
+                _imagePixelScaling = value;
+            }
+        }
+
         internal const string GlobalConfigName = "global_config.json";
 
         internal static string AssemblyFolder => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        public static Sprite LoadNewSprite(string path, float PixelsPerUnit = 200f)
+        public static Sprite LoadNewSprite(string path)
         {
             string finalPath = Path.Combine(ConfigManager.rootFolder, path);
             if (!File.Exists(finalPath))
             {
-                Logger.WriteToLog($"Image does not exist at path: \"{finalPath}\".\nNot loading a any image!");//Loading default sprite.");
+                Logger.WriteToLog($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
                 return null;
             }
-            Logger.WriteToLog($"Recovering image from: \"{finalPath}\"");
+            Logger.WriteToLog($"Recovering image at: \"{path}\"\nFull path: \"{finalPath}\"");
             Texture2D SpriteTexture = LoadTexture(finalPath);
             // Maybe we can adjust the size of the sprite.
             Rect oldRect = new Rect(0, 0, SpriteTexture.width, SpriteTexture.height);
-            Sprite NewSprite = Sprite.Create(SpriteTexture, oldRect, new Vector2(0, 0), PixelsPerUnit);
+            Sprite NewSprite = Sprite.Create(SpriteTexture, oldRect, new Vector2(0, 0), imagePixelScaling);
             return NewSprite;
         }
 
@@ -43,10 +58,8 @@ namespace QM_WeaponImporter
                 try
                 {
                     FileData = File.ReadAllBytes(FilePath);
-                    // Size does not matter, it gets overwritten.
-                    // TEsting with colour spaces.
-                    // Tex2D = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
-                    Tex2D = new Texture2D(2, 2);
+                    // Linear must be set to true.
+                    Tex2D = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
                     Tex2D.filterMode = FilterMode.Point;
                     ImageConversion.LoadImage(Tex2D, FileData);
                     return Tex2D;
@@ -88,7 +101,7 @@ namespace QM_WeaponImporter
             {
                 throw new NullReferenceException($"Directory {rootPath} does not exist.");
             }
-            
+
             // Maybe to help with this, import the file if exists, and if defaults are not there, add them?
             CreateFile(Path.Combine(rootPath, GlobalConfigName), JsonConvert.SerializeObject(new ConfigTemplate(), Formatting.Indented));
         }
@@ -108,17 +121,23 @@ namespace QM_WeaponImporter
 
         public static ConfigTemplate GetGlobalConfig(string path)
         {
-            // Well, time to WORKAROUND
-            Logger.WriteToLog($"Config Path: {path}");
+            Logger.WriteToLog($"Loading global config at \"{path}\"");
             string fullPath = Path.Combine(path, GlobalConfigName);
             if (!File.Exists(fullPath))
             {
                 throw new NullReferenceException($"Path \"{fullPath}\" for GetGlobalConfig is null.");
             }
             var importedString = File.ReadAllText(fullPath);
-            //string[] diskDrive = path.Split(':');
-            var config = JsonConvert.DeserializeObject<ConfigTemplate>(importedString);
-            //config.rootFolder = diskDrive[0] + ":" + config.rootFolder;
+
+            JsonSerializerSettings settings = new JsonSerializerSettings()
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
+            var resolver = new DefaultContractResolver();
+            resolver.DefaultMembersSearchFlags = resolver.DefaultMembersSearchFlags;
+            settings.ContractResolver = resolver;
+            var config = JsonConvert.DeserializeObject<ConfigTemplate>(importedString, settings);
+
             return config;
         }
 
