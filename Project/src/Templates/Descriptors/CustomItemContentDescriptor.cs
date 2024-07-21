@@ -1,4 +1,4 @@
-﻿using MGSC;
+using MGSC;
 using System.Collections.Generic;
 using UnityEngine;
 

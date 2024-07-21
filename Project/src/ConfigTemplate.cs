@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -17,6 +17,11 @@ namespace QM_WeaponImporter
         /// In relative pathing. (Relative to RootFolder)
         /// </summary>
         public string descriptorsPath { get; set; }
+
+        /// <summary>
+        /// Sets the pixels per unit for loading images. 50% is double the size. 200% is half the size.
+        /// </summary>
+        public float imagePixelScale { get; set; }
         public Dictionary<string, string> localizationPaths { get; set; }
         public Dictionary<string, string> folderPaths { get; set; }
 
@@ -24,7 +29,9 @@ namespace QM_WeaponImporter
         {
             rootFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Replace("\\", "/");
             descriptorsPath = "Assets/Descriptors";
-            localizationPaths = new Dictionary<string, string> {
+            imagePixelScale = 200f;
+            localizationPaths = new Dictionary<string, string> 
+            {
                 { "item", "Assets/localizations/item_localization.json" }
             };
             folderPaths = new Dictionary<string, string>
@@ -41,10 +48,11 @@ namespace QM_WeaponImporter
             };
         }
 
-        public ConfigTemplate(string rootFolder, string descriptorsPath, Dictionary<string, string> localizationPaths, Dictionary<string, string> folderPaths)
+        public ConfigTemplate(string rootFolder, string descriptorsPath, float imagePixelScale, Dictionary<string, string> localizationPaths, Dictionary<string, string> folderPaths)
         {
             this.rootFolder = rootFolder;
             this.descriptorsPath = descriptorsPath;
+            this.imagePixelScale = imagePixelScale;
             this.localizationPaths = localizationPaths;
             this.folderPaths = folderPaths;
         }
