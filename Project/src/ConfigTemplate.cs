@@ -48,10 +48,11 @@ namespace QM_WeaponImporter
             };
         }
 
-        public ConfigTemplate(string rootFolder, string descriptorsPath, Dictionary<string, string> localizationPaths, Dictionary<string, string> folderPaths)
+        public ConfigTemplate(string rootFolder, string descriptorsPath, float imagePixelScale, Dictionary<string, string> localizationPaths, Dictionary<string, string> folderPaths)
         {
             this.rootFolder = rootFolder;
             this.descriptorsPath = descriptorsPath;
+            this.imagePixelScale = imagePixelScale;
             this.localizationPaths = localizationPaths;
             this.folderPaths = folderPaths;
         }
