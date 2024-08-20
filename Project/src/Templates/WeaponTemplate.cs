@@ -99,10 +99,10 @@ namespace QM_WeaponImporter
         /// </summary>
         public string grip { get; set; }
         // This properties get moved to another descriptors
-        public string randomAttackSoundBank { get; set; }
-        public string randomDryShotSoundBank { get; set; }
-        public string randomFailedAttackSoundBank { get; set; }
-        public string randomReloadSoundBank { get; set; }
+        public List<string> randomAttackSoundBank { get; set; }
+        public List<string> randomDryShotSoundBank { get; set; }
+        public List<string> randomFailedAttackSoundBank { get; set; }
+        public List<string> randomReloadSoundBank { get; set; }
         public float visualReachCellDuration { get; set; }
         public List<string> entityFlySprites { get; set; }
         public bool useCustomBullet { get; set; } = false;

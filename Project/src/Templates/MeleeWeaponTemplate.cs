@@ -68,13 +68,10 @@ namespace QM_WeaponImporter
                 critPainDamageMultiplier = 1f,
                 painDamageMultiplier = 1f,
                 fovLookAngleMult = 1f,
-                randomAttackSoundBank = "",
-                randomDryShotSoundBank = "",
-                randomFailedAttackSoundBank = "",
-                randomReloadSoundBank = "",
-                iconPath = "Images/Knife.png",
-                smallIconPath = "Images/SmallDagger.png",
-                shadowOnFloorSpritePath = "folder/filename.extension"
+                randomAttackSoundBank = new List<string>() { "/Audio/Example/File.ogg" },
+                randomDryShotSoundBank = new List<string>() { "/Audio/Example/File.ogg" },
+                randomFailedAttackSoundBank = new List<string>() { "/Audio/Example/File.ogg" },
+                randomReloadSoundBank = new List<string>() { "/Audio/Example/File.ogg" },
             };
             return meleeWeapon;
         }

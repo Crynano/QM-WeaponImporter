@@ -71,13 +71,10 @@ namespace QM_WeaponImporter
                 rampUpValue = 0,
                 fovLookAngleMult = 1f,
                 hasHFGOverlay = false,
-                randomAttackSoundBank = "",
-                randomDryShotSoundBank = "",
-                randomFailedAttackSoundBank = "",
-                randomReloadSoundBank = "",
-                iconPath = "Images/Knife.png",
-                smallIconPath = "Images/SmallDagger.png",
-                shadowOnFloorSpritePath = "folder/filename.extension"
+                randomAttackSoundBank = new List<string>() { "Assets/Audio/Example/File.ogg" },
+                randomDryShotSoundBank = new List<string>() { "Assets/Audio/Example/File.ogg" },
+                randomFailedAttackSoundBank = new List<string>() { "Assets/Audio/Example/File.ogg" },
+                randomReloadSoundBank = new List<string>() { "Assets/Audio/Example/File.ogg" },
             };
             return rangedWeapon;
         }

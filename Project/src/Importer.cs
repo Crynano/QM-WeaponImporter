@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using QM_WeaponImporter.Templates.Descriptors;
 using QM_WeaponImporter.Templates;
 using Newtonsoft.Json.Serialization;
+using System.Collections.Generic;
 
 namespace QM_WeaponImporter
 {
@@ -66,10 +67,64 @@ namespace QM_WeaponImporter
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"Could not load image from {FilePath}. Error: {e.Message}");
+                    Logger.WriteToLog($"Could not load image from {FilePath}. Error: {e.Message}", Logger.LogType.Error);
                 }
             }
             return null;
+        }
+
+        public static AudioClip[] ImportAudio(List<string> audioPaths)
+        {
+            return new AudioClip[0];
+            List<AudioClip> result = new List<AudioClip>();
+            foreach (string audioPath in audioPaths)
+            {
+                result.Add(importAudio(audioPath));
+            }
+            return result.ToArray();
+        }
+
+        public static AudioClip ImportAudio(string relativePath)
+        {
+            return importAudio(relativePath);
+        }
+
+        private static AudioClip importAudio(string relativePath)
+        {
+            throw new NotImplementedException($"Audio is currently not implemented.");
+            return null;
+            // Give a path, then import. If file does not exist then not
+            string finalPath = Path.Combine(ConfigManager.rootFolder, relativePath);
+            if (!File.Exists(finalPath))
+            {
+                //throw new NullReferenceException($"Audio at {finalPath} does not exist.");
+                Logger.WriteToLog($"Sound at {finalPath} does not exist", Logger.LogType.Error);
+                return null;
+            }
+
+            //Get file
+            Logger.WriteToLog($"Trying to recover audio: {relativePath}");
+            int sampleRate = 44100;
+            int channels = 2;
+            int position = 0;
+            int frequency = 440;
+            var samples = new float[sampleRate * channels];
+            int itemIndex = 0;
+            var audioBytes = File.ReadAllBytes(finalPath);
+            for(int i = 0; i < samples.Length; i = i+2)
+            {
+                samples[i] = audioBytes[itemIndex];
+                samples[i + 1] = audioBytes[itemIndex];
+                itemIndex++;
+            }
+
+            var matchPieceAudio = AudioClip.Create("SampleBeep", sampleRate, channels, frequency, false);
+            matchPieceAudio.SetData(samples, 0);
+
+            matchPieceAudio.name = relativePath;
+            //matchPieceAudio.LoadAudioData();
+            Logger.WriteToLog(matchPieceAudio == null ? "Success " : "Failed " + $"when recovering audio {relativePath}");
+            return matchPieceAudio;
         }
 
         /// <summary>
@@ -84,14 +139,18 @@ namespace QM_WeaponImporter
             CreateExampleFile(RangedWeaponTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(FactionTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(new CustomItemContentDescriptor(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(MedTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(new MGSC.FoodRecord(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(new MGSC.TrashRecord(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(VestTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(HelmetTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(ArmorTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(LeggingsTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(BootsTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(RepairTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(GrenadeTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
         }
 
-        private static void CreateExampleFile<T>(T objectType, string folderPath)
-        {
-            string content = JsonConvert.SerializeObject(objectType, Formatting.Indented);
-            Directory.CreateDirectory(folderPath);
-            CreateFile(Path.Combine(folderPath, $"example_{objectType.GetType().Name}.json"), content);
-        }
 
         public static void CreateGlobalConfig(string rootPath)
         {
@@ -139,6 +198,13 @@ namespace QM_WeaponImporter
             var config = JsonConvert.DeserializeObject<ConfigTemplate>(importedString, settings);
 
             return config;
+        }
+
+        private static void CreateExampleFile<T>(T objectType, string folderPath)
+        {
+            string content = JsonConvert.SerializeObject(objectType, Formatting.Indented);
+            Directory.CreateDirectory(folderPath);
+            CreateFile(Path.Combine(folderPath, $"example_{objectType.GetType().Name}.json"), content);
         }
 
         private static void CreateFile(string filePath, string content, bool overrideFile = false)

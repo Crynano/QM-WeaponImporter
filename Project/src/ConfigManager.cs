@@ -1,9 +1,12 @@
 using MGSC;
 using Newtonsoft.Json;
+using QM_WeaponImporter.Templates;
 using QM_WeaponImporter.Templates.Descriptors;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using UnityEngine;
 
 namespace QM_WeaponImporter
 {
@@ -81,7 +84,7 @@ namespace QM_WeaponImporter
                 CustomItemContentDescriptor customItemDescriptor = GetDescriptor(ammoItem.Id);
                 Data.Descriptors.TryGetValue("ammo", out DescriptorsCollection ammoDescriptors);
                 AmmoDescriptor baseAmmo = ammoDescriptors.GetDescriptor(customItemDescriptor.baseItemId) as AmmoDescriptor;
-                ItemContentDescriptor originalDescriptor = customItemDescriptor.GetOriginal();
+                ItemContentDescriptor originalDescriptor = customItemDescriptor.GetOriginal<ItemContentDescriptor>();
                 AmmoDescriptor ammoContentDescriptor = new AmmoDescriptor();
                 if (baseAmmo != null)
                 {
@@ -94,17 +97,17 @@ namespace QM_WeaponImporter
                 ammoContentDescriptor._smallIcon = originalDescriptor._smallIcon == null && baseAmmo != null ? baseAmmo._smallIcon : originalDescriptor._smallIcon;
                 ammoContentDescriptor._shadow = originalDescriptor._shadow == null && baseAmmo != null ? baseAmmo._shadow : originalDescriptor._icon;
                 ammoItem.ContentDescriptor = ammoContentDescriptor;
-                MGSC.Data.Items.AddRecord(ammoItem.Id, ammoItem);
+                AddItemToGame(ammoItem);
             }));
             Parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
             {
-                GameItemCreator.CreateMeleeWeapon(weaponTemplate);
+                GameItemCreator.CreateWeapon(weaponTemplate, GetDescriptor(weaponTemplate.id));
             }));
             // TODO -- port this to the ImportParser
             // ------- eliminate RangedWeaponTemplate
             Parsers.Add(new TemplateParser<RangedWeaponTemplate>("rangedweapons", delegate (RangedWeaponTemplate weaponTemplate)
             {
-                GameItemCreator.CreateRangedWeapon(weaponTemplate);
+                GameItemCreator.CreateWeapon(weaponTemplate, GetDescriptor(weaponTemplate.id));
             }));
             Parsers.Add(new ImportParser<ItemTransformationRecord>("itemtransforms", delegate (ItemTransformationRecord itemTransformRecord)
             {
@@ -145,22 +148,124 @@ namespace QM_WeaponImporter
             // ------- reference datadiskRecord parses for completing backpack implementation
             Parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
             {
-                Logger.WriteToLog($"Backpack ID: [{backpackItem.Id}]");
                 CustomItemContentDescriptor customItemDescriptor = GetDescriptor(backpackItem.Id);
-                ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal();
+                ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ItemContentDescriptor>();
                 /// Here we determine which values are needed for the backpack.
                 /// It won't magically just become an item, sadly.
                 backpackItem.ContentDescriptor = itemContentDescriptor;
-                if (backpackItem.ContentDescriptor != null)
+                AddItemToGame(backpackItem);
+            }));
+            Parsers.Add(new NullableRecordParser<MedkitRecord>("medkits", delegate (MedkitRecord item)
+            {
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
+                ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ItemContentDescriptor>();
+                item.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(item);
+            }));
+            Parsers.Add(new NullableRecordParser<FoodRecord>("consumables", delegate (FoodRecord item)
+            {
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
+                FoodDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<FoodDescriptor>();
+                itemContentDescriptor._useEatSound = ExtractCustomParameter<bool>(customItemDescriptor.customParameters, "UseEatSound");
+                item.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(item);
+            }));
+            Parsers.Add(new NullableRecordParser<VestTemplate>("vests", delegate (VestTemplate vestItem)
+            {
+                var gameVest = vestItem.GetOriginal();
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameVest.Id);
+                VestDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<VestDescriptor>();
+                gameVest.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(gameVest);
+            }));
+            Parsers.Add(new NullableRecordParser<HelmetTemplate>("helmets", delegate (HelmetTemplate armorItem)
+            {
+                var gameArmor = armorItem.GetOriginal();
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameArmor.Id);
+                var itemContentDescriptor = customItemDescriptor.GetOriginal<HelmetDescriptor>();
+                gameArmor.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(gameArmor);
+            }));
+            Parsers.Add(new NullableRecordParser<ArmorTemplate>("armors", delegate (ArmorTemplate armorItem)
+            {
+                var gameArmor = armorItem.GetOriginal();
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameArmor.Id);
+                ArmorDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ArmorDescriptor>();
+                gameArmor.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(gameArmor);
+            }));
+            Parsers.Add(new NullableRecordParser<LeggingsTemplate>("leggings", delegate (LeggingsTemplate armorItem)
+            {
+                var gameArmor = armorItem.GetOriginal();
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameArmor.Id);
+                var itemContentDescriptor = customItemDescriptor.GetOriginal<LeggingsDescriptor>();
+                gameArmor.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(gameArmor);
+            }));
+            Parsers.Add(new NullableRecordParser<BootsTemplate>("boots", delegate (BootsTemplate armorItem)
+            {
+                var gameArmor = armorItem.GetOriginal();
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameArmor.Id);
+                BootsDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<BootsDescriptor>();
+                gameArmor.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(gameArmor);
+            }));
+            Parsers.Add(new NullableRecordParser<RepairRecord>("repairs", delegate (RepairRecord item)
+            {
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
+                RepairDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<RepairDescriptor>();
+                customItemDescriptor.customParameters.TryGetValue("customUseSoundPath", out string[] audioPaths);
+                if (audioPaths != null && audioPaths.Length > 0)
                 {
-                    MGSC.Data.Items.AddRecord(backpackItem.Id, backpackItem);
+                    var audioClip = Importer.ImportAudio(audioPaths[0]);
+                    if (audioClip != null)
+                        itemContentDescriptor.CustomUseSound = audioClip;
+                }
+                item.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(item);
+            }));
+            Parsers.Add(new NullableRecordParser<GrenadeTemplate>("grenades", delegate (GrenadeTemplate item)
+            {
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
+                GrenadeItemDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<GrenadeItemDescriptor>();
+
+                Data.Descriptors.TryGetValue("grenades", out DescriptorsCollection ammoDescriptors);
+                GrenadeItemDescriptor baseGrenade = ammoDescriptors.GetDescriptor(customItemDescriptor.baseItemId) as GrenadeItemDescriptor;
+
+                if (baseGrenade == null) baseGrenade = ammoDescriptors.GetDescriptor("frag_grenade") as GrenadeItemDescriptor;
+                if (baseGrenade != null)
+                {
+                    itemContentDescriptor.entityFlySprites = baseGrenade.entityFlySprites;
+                    itemContentDescriptor.entityShadowSprites = baseGrenade.entityShadowSprites;
+                    itemContentDescriptor.ricochetSound = baseGrenade.ricochetSound;
+                    itemContentDescriptor.throwSound = baseGrenade.throwSound;
+                    itemContentDescriptor.fallSound = baseGrenade.fallSound;
+                    itemContentDescriptor.explosionSoundBank = baseGrenade.explosionSoundBank;
+                    itemContentDescriptor.visualExplosionOffset = baseGrenade.visualExplosionOffset;
+                    itemContentDescriptor.explosion = baseGrenade.explosion;
                 }
                 else
                 {
-                    Logger.WriteToLog($"Backpack {backpackItem.Id} could not be loaded because descriptor is null.", Logger.LogType.Warning);
+                    Logger.WriteToLog($"Base grenade {customItemDescriptor.baseItemId} and \"frag grenade\" do not exist." +
+                        $"\nCustom grenades will not work properly!", Logger.LogType.Warning);
+                    return;
                 }
-            }));
 
+                itemContentDescriptor.ClearGibsRadiusInPixels = ExtractCustomParameter<int>(customItemDescriptor.customParameters, "ClearGibsRadiusInPixels");
+                itemContentDescriptor.ShakeCameraOnExplosion = ExtractCustomParameter<bool>(customItemDescriptor.customParameters, "ShakeCameraOnExplosion");
+                itemContentDescriptor.visualExplsoionDelay = ExtractCustomParameter<float>(customItemDescriptor.customParameters, "visualExplsoionDelay");
+                itemContentDescriptor.visualReachCellDuration = ExtractCustomParameter<float>(customItemDescriptor.customParameters, "visualReachCellDuration");
+                
+                item.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(item);
+            }));
+            Parsers.Add(new NullableRecordParser<TrashRecord>("trash", delegate (TrashRecord item)
+            {
+                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
+                ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ItemContentDescriptor>();
+                item.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(item);
+            }));
         }
 
         // Create the global config in the assembly folder.
@@ -175,7 +280,6 @@ namespace QM_WeaponImporter
             LoadDefaultParsers();
             try
             {
-
                 if (rootFolder == null || rootFolder.Equals(string.Empty))
                 {
                     Logger.WriteToLog($"Root Folder in global config file is empty.", Logger.LogType.Error);
@@ -233,9 +337,37 @@ namespace QM_WeaponImporter
         }
 
         #region Utils
+
+        private static void AddItemToGame(BasePickupItemRecord item)
+        {
+            if (item.ContentDescriptor != null)
+            {
+                MGSC.Data.Items.AddRecord(item.Id, item);
+            }
+            else
+            {
+                Logger.WriteToLog($"Item {item.Id} could not be loaded because descriptor is null.", Logger.LogType.Error);
+            }
+        }
+
+        private static T ExtractCustomParameter<T>(Dictionary<string, string[]> descriptorParameters, string parameter)
+        {
+            descriptorParameters.TryGetValue(parameter, out string[] customParameters);
+            var converter = TypeDescriptor.GetConverter(typeof(T));
+            if (converter != null && converter.IsValid(customParameters[0]))
+                return (T)converter.ConvertFromString(customParameters[0]);
+            else return default(T);
+        }
+
         public static CustomItemContentDescriptor GetDescriptor(string id)
         {
-            return itemDescriptors.Find(x => x.attachedId.Equals(id));
+            var item = itemDescriptors.Find(x => x.attachedId.Equals(id));
+            if (item == null)
+            {
+                Logger.WriteToLog($"Descriptor for {id} not found. Returning a null");
+                return null;
+            }
+            return item;
         }
 
         /// <summary>

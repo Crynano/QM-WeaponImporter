@@ -21,10 +21,9 @@ public class CustomItemContentDescriptor
         { "parametersName", ["RelativePaths1", "RelativePaths2"] }
     };
 
-    public virtual ItemContentDescriptor GetOriginal()
+    public virtual T GetOriginal<T>() where T : ItemContentDescriptor
     {
-        Logger.WriteToLog($"Returning Original from Parent!");
-        ItemContentDescriptor defaultReturn = ScriptableObject.CreateInstance<ItemContentDescriptor>();
+        T defaultReturn = ScriptableObject.CreateInstance<T>();
         defaultReturn._overridenRenderId = overridenRenderId;
         defaultReturn._icon = Importer.LoadNewSprite(iconSpritePath);
         defaultReturn._smallIcon = Importer.LoadNewSprite(iconSpritePath);

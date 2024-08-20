@@ -1,4 +1,5 @@
 using MGSC;
+using QM_WeaponImporter.Templates.Descriptors;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,7 +10,7 @@ namespace QM_WeaponImporter
 {
     public static class GameItemCreator
     {
-        public static bool CreateWeapon(WeaponTemplate userWeapon)
+        public static bool CreateWeapon(WeaponTemplate userWeapon, CustomItemContentDescriptor weaponDescriptor)
         {
             try
             {
@@ -26,7 +27,7 @@ namespace QM_WeaponImporter
                     ConfigureRangedWeapon(ref myWeapon, userWeapon as RangedWeaponTemplate);
                 }
                 SetCommonProperties(ref myWeapon, userWeapon);
-                SetDescriptorProperties(ref myWeapon, userWeapon);
+                SetDescriptorProperties(ref myWeapon, userWeapon, weaponDescriptor);
                 //myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
                 return true;
@@ -39,62 +40,64 @@ namespace QM_WeaponImporter
             }
         }
 
-        public static bool CreateMeleeWeapon(MeleeWeaponTemplate userWeapon)
-        {
-            try
-            {
-                Logger.WriteToLog($"Creating MELEE weapon with ID: {userWeapon.id}");
-                WeaponRecord myWeapon = new WeaponRecord();
-                ConfigureMeleeWeapon(ref myWeapon, userWeapon);
-                SetCommonProperties(ref myWeapon, userWeapon);
-                SetDescriptorProperties(ref myWeapon, userWeapon);
-                //myWeapon.DefineClassTraits();
-                MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
-                return true;
-            }
-            catch (Exception e)
-            {
-                Logger.WriteToLog($"Melee weapon [{userWeapon.id}] couldn't be added.\n{e.Message}\n{e.Source}");
-                Logger.FlushAdditive();
-                return false;
-            }
-        }
+        //public static bool CreateMeleeWeapon(MeleeWeaponTemplate userWeapon, CustomItemContentDescriptor weaponDescriptor)
+        //{
+        //    try
+        //    {
+        //        Logger.WriteToLog($"Creating MELEE weapon with ID: {userWeapon.id}");
+        //        WeaponRecord myWeapon = new WeaponRecord();
+        //        ConfigureMeleeWeapon(ref myWeapon, userWeapon);
+        //        SetCommonProperties(ref myWeapon, userWeapon);
+        //        SetDescriptorProperties(ref myWeapon, userWeapon);
+        //        //myWeapon.DefineClassTraits();
+        //        MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
+        //        return true;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Logger.WriteToLog($"Melee weapon [{userWeapon.id}] couldn't be added.\n{e.Message}\n{e.InnerException}", Logger.LogType.Error);
+        //        Logger.FlushAdditive();
+        //        return false;
+        //    }
+        //}
 
-        public static bool CreateRangedWeapon(RangedWeaponTemplate userWeapon)
-        {
-            try
-            {
-                Logger.WriteToLog($"Creating RANGED weapon with ID: {userWeapon.id}");
-                WeaponRecord myWeapon = new WeaponRecord();
-                ConfigureRangedWeapon(ref myWeapon, userWeapon);
-                SetCommonProperties(ref myWeapon, userWeapon);
-                SetDescriptorProperties(ref myWeapon, userWeapon);
-                //myWeapon.DefineClassTraits();
-                MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
-                return true;
-            }
-            catch (Exception e)
-            {
-                Logger.WriteToLog($"Ranged weapon [{userWeapon.id}] couldn't be added.\n{e.Message}\n{e.Source}");
-                Logger.FlushAdditive();
-                return false;
-            }
-        }
+        //public static bool CreateRangedWeapon(RangedWeaponTemplate userWeapon, CustomItemContentDescriptor weaponDescriptor)
+        //{
+        //    try
+        //    {
+        //        Logger.WriteToLog($"Creating RANGED weapon with ID: {userWeapon.id}");
+        //        WeaponRecord myWeapon = new WeaponRecord();
+        //        ConfigureRangedWeapon(ref myWeapon, userWeapon);
+        //        SetCommonProperties(ref myWeapon, userWeapon);
+        //        SetDescriptorProperties(ref myWeapon, userWeapon);
+        //        //myWeapon.DefineClassTraits();
+        //        MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
+        //        return true;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Logger.WriteToLog($"Ranged weapon [{userWeapon.id}] couldn't be added.\n{e.Message}\n{e.InnerException}", Logger.LogType.Error);
+        //        Logger.FlushAdditive();
+        //        return false;
+        //    }
+        //}
 
-        private static void SetDescriptorProperties(ref WeaponRecord myWeapon, WeaponTemplate userWeapon)
+        private static void SetDescriptorProperties(ref WeaponRecord myWeapon, WeaponTemplate userWeapon, CustomItemContentDescriptor weaponDescriptor)
         {
             WeaponDescriptor myWeaponDescriptor = ScriptableObject.CreateInstance("WeaponDescriptor") as WeaponDescriptor;
+            // Get the loaded descriptor for the weapon?
+
             myWeaponDescriptor._overridenRenderId = userWeapon.id;
 
-            Sprite itemSprite = Importer.LoadNewSprite(userWeapon.iconPath);
+            Sprite itemSprite = Importer.LoadNewSprite(weaponDescriptor.iconSpritePath);
             if (itemSprite != null)
                 myWeaponDescriptor._icon = itemSprite;
 
-            Sprite smallIconSprite = Importer.LoadNewSprite(userWeapon.smallIconPath);
+            Sprite smallIconSprite = Importer.LoadNewSprite(weaponDescriptor.smallIconSpritePath);
             if (smallIconSprite != null)
                 myWeaponDescriptor._smallIcon = smallIconSprite;
 
-            Sprite shadowSprite = Importer.LoadNewSprite(userWeapon.shadowOnFloorSpritePath);
+            Sprite shadowSprite = Importer.LoadNewSprite(weaponDescriptor.shadowOnFloorSpritePath);
             if (shadowSprite != null)
                 myWeaponDescriptor._shadow = shadowSprite;
 
@@ -162,15 +165,6 @@ namespace QM_WeaponImporter
             //    _putDecals = userBullet.putDecals
             //};
 
-
-            // Custom sound bank.
-            SoundBank myWeaponSoundBank = new SoundBank();
-            //AudioClip ac = new AudioClip("myweapon_default", int lengthSamples, int channels, int frequency, bool stream);
-            //myWeaponSoundBank._clips = 
-            //[
-
-            //];
-
             MGSC.Data.Descriptors.TryGetValue("meleeweapons", out DescriptorsCollection meleeWeaponsDescriptors);
             // This gets the army_knife sounds by default
             if ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0] != null)
@@ -180,6 +174,64 @@ namespace QM_WeaponImporter
                 myWeaponDescriptor._failedAttackSoundBanks = ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0])._failedAttackSoundBanks;
                 myWeaponDescriptor._reloadSoundBanks = ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0])._reloadSoundBanks;
             }
+
+            try
+            {
+
+                // Custom sound bank.
+                AudioClip[] randomAttackAudios = Importer.ImportAudio(userWeapon.randomAttackSoundBank);
+                if (randomAttackAudios.Length > 0)
+                {
+                    myWeaponDescriptor._attackSoundBanks = new SoundBank[]
+                    {
+                        new SoundBank()
+                        {
+                            name = $"{userWeapon.id}_soundbank",
+                            _maxDistanceInCells = 10,
+                            _minDistanceInCells = 6,
+                            _pitch = 1f,
+                            _priority = 128,
+                            _rolloffMode = AudioRolloffMode.Linear,
+                            _spatialBlend = 1f,
+                            _stereoPan = 0f,
+                            _volume = 0.4f,
+                            _clips = randomAttackAudios
+                        }
+                    };
+                }
+
+                randomAttackAudios = Importer.ImportAudio(userWeapon.randomDryShotSoundBank);
+                if (randomAttackAudios.Length > 0)
+                {
+                    myWeaponDescriptor._dryShotSoundBanks[0]._clips = randomAttackAudios;
+                }
+
+                randomAttackAudios = Importer.ImportAudio(userWeapon.randomFailedAttackSoundBank);
+                if (randomAttackAudios.Length > 0)
+                {
+                    myWeaponDescriptor._failedAttackSoundBanks[0]._clips = randomAttackAudios;
+                }
+
+                randomAttackAudios = Importer.ImportAudio(userWeapon.randomReloadSoundBank);
+                if (randomAttackAudios.Length > 0)
+                {
+                    myWeaponDescriptor._reloadSoundBanks[0]._clips = randomAttackAudios;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.WriteToLog($"Trying to add sounds but: {e.Message}\n{e.StackTrace}", Logger.LogType.Error);
+            }
+
+            
+
+            //AudioClip ac = new AudioClip("myweapon_default", int lengthSamples, int channels, int frequency, bool stream);
+            //myWeaponSoundBank._clips = 
+            //[
+
+            //];
+
+
 
             myWeapon.ContentDescriptor = myWeaponDescriptor;
             Logger.WriteToLog($"Weapon Descriptor for [{userWeapon.id}] has been added successfully!");

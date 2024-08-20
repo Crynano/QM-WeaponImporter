@@ -36,6 +36,7 @@ namespace QM_WeaponImporter
             };
             folderPaths = new Dictionary<string, string>
             {
+                { "trash", "Assets/Config/trash" },
                 { "ammo", "Assets/Config/ammo" },
                 { "meleeweapons", "Assets/Config/meleeweapons" },
                 { "rangedweapons", "Assets/Config/rangedweapons" },
@@ -44,7 +45,17 @@ namespace QM_WeaponImporter
                 { "workbenchreceipts", "Assets/Config/workbenchreceipts" },
                 { "datadisks", "Assets/Config/datadisks" },
                 { "factionconfig", "Assets/Config/factionconfig" },
-                { "backpacks", "Assets/Config/backpacks" }
+                { "backpacks", "Assets/Config/backpacks" },
+                { "vests", "Assets/Config/vests" },
+                { "helmets", "Assets/Config/helmets" },
+                { "armors", "Assets/Config/armors" },
+                { "leggings", "Assets/Config/leggings" },
+                { "boots", "Assets/Config/boots" },
+                { "repairs", "Assets/Config/repairs" },
+                { "grenades", "Assets/Config/grenades" },
+                { "mines", "Assets/Config/mines" },
+                { "medkits", "Assets/Config/medkits" },
+                { "consumables", "Assets/Config/consumables" }
             };
         }
 
