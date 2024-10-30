@@ -134,7 +134,7 @@ namespace QM_WeaponImporter
         public static void CreateExampleConfigFiles(string rootPath)
         {
             CreateExampleFile(new BulletTemplate(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(new LocalizationTemplate(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(LocalizationTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(MeleeWeaponTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(RangedWeaponTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(FactionTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
@@ -149,6 +149,10 @@ namespace QM_WeaponImporter
             CreateExampleFile(BootsTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(RepairTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(GrenadeTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(new MGSC.ItemTransformationRecord() { Id = "Example ID", OutputItems =
+                [new MGSC.ItemQuantity() { Count = 1, ItemId = "Item ID" }]
+            }, Path.Combine(rootPath, "Examples"));
+            CreateExampleFile(new MGSC.DatadiskRecord(), Path.Combine(rootPath, "Examples"));
         }
 
 
@@ -202,6 +206,7 @@ namespace QM_WeaponImporter
 
         private static void CreateExampleFile<T>(T objectType, string folderPath)
         {
+            if (objectType == null) return;
             string content = JsonConvert.SerializeObject(objectType, Formatting.Indented);
             Directory.CreateDirectory(folderPath);
             CreateFile(Path.Combine(folderPath, $"example_{objectType.GetType().Name}.json"), content);
@@ -211,7 +216,8 @@ namespace QM_WeaponImporter
         {
             if (File.Exists(filePath) && !overrideFile)
             {
-                Logger.WriteToLog($"File exists at {filePath}.Not creating a new one.", Logger.LogType.Warning);
+                // No need to flood...
+                //Logger.WriteToLog($"File exists at {filePath}.Not creating a new one.", Logger.LogType.Warning);
                 return;
             }
             Logger.WriteToLog($"Creating file {filePath}");

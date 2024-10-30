@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using MGSC;
 
 namespace QM_WeaponImporter
 {
     [Serializable]
     public class FactionTemplate
     {
-        public string FactionName;
-        public List<Items> Items;
-        public List<Items> TradeItems;
-        public List<Items> RewardItems;
-        public List<Items> Units;
+        public List<FactionReward> Items = new List<FactionReward>();
+        //public List<Items> TradeItems;
+        //public List<Items> RewardItems;
+        //public List<Items> Units;
 
         public FactionTemplate()
         {
@@ -19,111 +19,55 @@ namespace QM_WeaponImporter
 
         public static FactionTemplate GetExample()
         {
-            FactionTemplate retFaction = new FactionTemplate()
+            try
             {
-                FactionName = "AnCom",
-                Items = new List<Items>()
-            {
-                new Items()
+                FactionTemplate retFaction = new FactionTemplate()
                 {
-                    difficulty = 1,
-                    contentRecords = new List<MGSC.ContentDropRecord>()
-                    {
-                        new MGSC.ContentDropRecord()
+                    Items =
+                    [
+                        new FactionReward()
                         {
-                            ContentIds = new List<string>()
-                            {
-                                "weapon_id"
-                            },
-                            Points = 20,
-                            RewardWeight = 4,
-                            TechLevel = 1,
-                            Weight = 4
+                            factionTags = ["AnCom_1", "SBN_3"],
+                            contentRecords =
+                            [
+                                new ContentDropRecord()
+                                {
+                                    ContentIds = ["ItemID"], Points = 100, TechLevel = 1, Weight = 10
+                                }
+                            ]
                         }
-                    }
-                }
-            },
-                TradeItems = new List<Items>()
-            {
-                new Items()
-                {
-                    difficulty = 1,
-                    contentRecords = new List<MGSC.ContentDropRecord>()
-                    {
-                        new MGSC.ContentDropRecord()
-                        {
-                            ContentIds = new List<string>()
-                            {
-                                "weapon_id"
-                            },
-                            Points = 20,
-                            RewardWeight = 4,
-                            TechLevel = 1,
-                            Weight = 4
-                        }
-                    }
-                }
-            },
-                RewardItems = new List<Items>()
-            {
-                new Items()
-                {
-                    difficulty = 1,
-                    contentRecords = new List<MGSC.ContentDropRecord>()
-                    {
-                        new MGSC.ContentDropRecord()
-                        {
-                            ContentIds = new List<string>()
-                            {
-                                "weapon_id"
-                            },
-                            Points = 20,
-                            RewardWeight = 4,
-                            TechLevel = 1,
-                            Weight = 4
-                        }
-                    }
-                }
-            },
-                Units = new List<Items>()
-                {
-                    new Items()
-                {
-                    difficulty = 1,
-                    contentRecords = new List<MGSC.ContentDropRecord>()
-                    {
-                        new MGSC.ContentDropRecord()
-                        {
-                            ContentIds = new List<string>()
-                            {
-                                "weapon_id"
-                            },
-                            Points = 20,
-                            RewardWeight = 4,
-                            TechLevel = 1,
-                            Weight = 4
-                        }
-                    }
-                }
-                }
-            };
 
-            return retFaction;
+                    ]
+                };
+
+                return retFaction;
+            }
+            catch (Exception ex)
+            {
+                Logger.WriteToLog($"Exception when generating the Example for FactionTemplate.\n{ex.Message}");
+            }
+
+            return null;
         }
     }
 
     [Serializable]
-    public class Items
+    public class FactionReward
     {
-        public int difficulty;
-        public List<MGSC.ContentDropRecord> contentRecords;
+        // This faction tags define all components of where an item goes.
+        // Want it to go to 7 different factions at level 1?
+        // use AnCom_1, {FactionName}_{TechLevel}
+        // Then we split it and add it to every table.
+        public List<string> factionTags = new List<string>();
+        public List<MGSC.ContentDropRecord> contentRecords = new List<MGSC.ContentDropRecord>();
     }
 
     public enum ContentDropTableType
     {
         Units,
         Items,
-        TradeItems,
-        RewardItems
+        RewardEquipment,
+        RewardChips,
+        RewardConsumables
     }
 }

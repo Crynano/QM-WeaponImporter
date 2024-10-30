@@ -6,19 +6,13 @@ using UnityEngine;
 namespace QM_WeaponImporter;
 internal static class Logger
 {
-    internal static string AssemblyFolder => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-    private const string LogFileName = "QM_WeaponsImporter_Log.txt";
-    private const string LogSignature = "QM_WeaponImporter";
-    private static string Log = "";
+    private static string LogFileName => "Log.txt";
+    private static string LogSignature = "QM_WeaponImporter";
+    private static string Log = $"[{DateTime.Now.ToString()}][{LogSignature}] ----------- Log Start -----------\n";
 
-    private static string GetPath => Path.Combine(AssemblyFolder, LogFileName);
+    private static string GetPath => Path.Combine(ConfigManager.rootFolder, LogFileName);
     public static void WriteToLog(string message, LogType logType = LogType.Info, bool writeToUnity = true)
     {
-        if (Log.Equals(string.Empty))
-        {
-            Log = $"[{DateTime.Now.ToString()}][{LogSignature}] NEW LOG. \n";
-        }
-
         string beautifiedMessage = $"[{DateTime.Now.ToString()}][{LogSignature}][{logType.ToString().ToUpper()}] {message}";
 
         // We can duplicate logs for Bepinex or custom console users.
@@ -28,6 +22,7 @@ internal static class Logger
 
     public static void Flush()
     {
+        WriteToLog($"[{DateTime.Now.ToString()}][{LogSignature}] ----------- Log End -----------");
         File.WriteAllText(GetPath, Log);
         Log = string.Empty;
     }

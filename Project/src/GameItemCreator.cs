@@ -272,7 +272,6 @@ namespace QM_WeaponImporter
             myWeapon.PainDamageMult = userWeapon.painDamageMultiplier;
             myWeapon.CritPainDamageMult = userWeapon.critPainDamageMultiplier;
             myWeapon.OffSlotCritChance = userWeapon.offSlotCritChance;
-            myWeapon.MinDmgCapBonus = userWeapon.minDmgCapBonus;
             myWeapon.RampUpValue = userWeapon.rampUpValue;
             myWeapon.FovLookAngleMult = userWeapon.fovLookAngleMult;
         }
@@ -307,71 +306,59 @@ namespace QM_WeaponImporter
 
         #region Utilities
 
-        public static bool AddItemsToFactions(FactionTemplate factionTemplate)
-        {
-            try
-            {
-                AddToFactionTable(factionTemplate, ContentDropTableType.Units);
-                AddToFactionTable(factionTemplate, ContentDropTableType.Items);
-                AddToFactionTable(factionTemplate, ContentDropTableType.TradeItems);
-                AddToFactionTable(factionTemplate, ContentDropTableType.RewardItems);
-
-                return true;
-            }
-            catch (Exception e)
-            {
-                Logger.WriteToLog($"Couldn't add items to faction.\nError: {e.Message}\nSource: {e.Source}");
-                return false;
-            }
+        public static void AddItemsToFactions(FactionTemplate factionTemplate)
+        { 
+            AddToFactionTable(factionTemplate);
         }
 
-        private static void AddToFactionTable(FactionTemplate factionTemplate, ContentDropTableType tableType)
+        private static void AddToFactionTable(FactionTemplate factionTemplate)
         {
             // Just add them, how difficult can it be? :P
             // Get the list from Data. Check if it exists
             // Because we don't have any, we have to get the name of the table?
             // Then if exists, search for the difficulty number under the list
             // If it exists, then add the item to the list
-            string tableName = "";
-            List<Items> selectedTable;
-            switch (tableType)
+            string tableName = "rewardEquipment";
+            var selectedTable = factionTemplate.Items;
+            // Get the table name, this case it will always be the equipmentReward
+
+            foreach (var factionRewardTable in selectedTable)
             {
-                case ContentDropTableType.Items:
-                    selectedTable = factionTemplate.Items;
-                    tableName = "items";
-                    break;
-                case ContentDropTableType.Units:
-                    selectedTable = factionTemplate.Units;
-                    tableName = "units";
-                    break;
-                case ContentDropTableType.TradeItems:
-                    selectedTable = factionTemplate.TradeItems;
-                    tableName = "tradeItems";
-                    break;
-                case ContentDropTableType.RewardItems:
-                    selectedTable = factionTemplate.RewardItems;
-                    tableName = "rewardItems";
-                    break;
-                default:
-                    Logger.WriteToLog($"Table {tableType} was not found. Are you sure its correct?");
-                    return;
-            }
-            string itemFactionTableName = factionTemplate.FactionName + "_" + tableName;
-            MGSC.Data.FactionDrop._recordsByFactions.TryGetValue(itemFactionTableName, out Dictionary<int, List<ContentDropRecord>> itemFactionTable);
-            if (itemFactionTable != null)
-            {
-                foreach (var itemTable in selectedTable)
+                for (int i = 0; i < factionRewardTable.factionTags.Count; i++)
                 {
-                    foreach (var item in itemTable.contentRecords)
+                    string[] factionAndLevelSplit = factionRewardTable.factionTags[i].Split('_');
+                    // Ensure we have 2 entries, the name and the level
+                    if (factionAndLevelSplit.Length == 2)
                     {
-                        itemFactionTable[itemTable.difficulty].Add(item);
-                        Logger.WriteToLog($"Adding {item.ContentIds[0]} to the table {itemFactionTableName}");
+                        string factionName = factionAndLevelSplit[0];
+                        short.TryParse(factionAndLevelSplit[1], out short factionRewardLevel);
+                        // We have the number and the name, now get the table
+                        // Do $"{factionName}_{tableName}" then index by the number in the tag.
+                        bool isTableFound = Data.FactionDrop._recordsByFactions.TryGetValue($"{factionName}_{tableName}", 
+                            out Dictionary<int, List<ContentDropRecord>> itemFactionTable);
+
+                        if (!isTableFound)
+                        {
+                            Logger.WriteToLog($"Could not find faction table for {factionName}", Logger.LogType.Warning);
+                            continue;
+                        }
+
+                        if (factionRewardLevel < 0 || factionRewardLevel > 10)
+                        {
+                            Logger.WriteToLog($"Faction ID is over the limits. (0,10] and the value is {factionRewardLevel}", Logger.LogType.Warning);
+                            continue;
+                        }
+                        // Here we have the table, so we index and add.
+                        itemFactionTable.TryGetValue(factionRewardLevel, out List<ContentDropRecord> itemFactionRecords);
+                        // Can't be null because its supposed to be in this range. It could not be initialized but oh well.
+                        if (itemFactionRecords == null)
+                        {
+                            Logger.WriteToLog($"No faction rewards for {factionName} at level {factionRewardLevel}.");
+                            continue;
+                        }
+                        itemFactionRecords.AddRange(factionRewardTable.contentRecords);
                     }
                 }
-            }
-            else
-            {
-                Logger.WriteToLog($"Table [{itemFactionTableName}] not found in the Faction Drops collection.\nCheck if [{factionTemplate.FactionName}] is correct.");
             }
         }
 

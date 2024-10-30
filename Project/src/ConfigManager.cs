@@ -138,14 +138,7 @@ namespace QM_WeaponImporter
                     //datadiskRecord.ContentDescriptor = descs.GetDescriptor(datadiskRecord.Id);
                 }
             }));
-            // TODO -- port this to the ImportParser
-            // ------- eliminate FactionTemplate
-            Parsers.Add(new TemplateParser<FactionTemplate>("factionitems", delegate (FactionTemplate factionTemplate)
-            {
-                GameItemCreator.AddItemsToFactions(factionTemplate);
-            }));
-            // TODO -- port this to the ImportParser
-            // ------- reference datadiskRecord parses for completing backpack implementation
+            Parsers.Add(new NullableRecordParser<FactionTemplate>("factionconfig", GameItemCreator.AddItemsToFactions));
             Parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
             {
                 CustomItemContentDescriptor customItemDescriptor = GetDescriptor(backpackItem.Id);
@@ -272,8 +265,8 @@ namespace QM_WeaponImporter
         // You only send the config over, then everything else is automatic.
         public static bool ImportConfig(ConfigTemplate userConfig)
         {
-            Logger.WriteToLog($"Starting import config from: {userConfig.rootFolder}");
             rootFolder = userConfig.rootFolder;
+            Logger.WriteToLog($"Starting import config from: {userConfig.rootFolder}");
             Importer.imagePixelScaling = Mathf.Max(1f, userConfig.imagePixelScale);
             // This must include the Import.
             LoadDescriptors(userConfig);
@@ -285,6 +278,7 @@ namespace QM_WeaponImporter
                     Logger.WriteToLog($"Root Folder in global config file is empty.", Logger.LogType.Error);
                     return false;
                 }
+
                 if (!Directory.Exists(rootFolder))
                 {
                     Logger.WriteToLog($"Root Folder \"{rootFolder}\" does not exist.", Logger.LogType.Error);
@@ -297,13 +291,19 @@ namespace QM_WeaponImporter
                 {
                     if (!ParseFile(path)) continue;
                 }
+
                 Logger.WriteToLog($"Configuration success for {userConfig.rootFolder}");
                 return true;
             }
             catch (Exception e)
             {
-                Logger.WriteToLog($"Configuration failed for {userConfig.rootFolder}.\n{e.Message}\n{e.StackTrace}", Logger.LogType.Error);
+                Logger.WriteToLog($"Configuration failed for {userConfig.rootFolder}.\n{e.Message}\n{e.StackTrace}",
+                    Logger.LogType.Error);
                 return false;
+            }
+            finally
+            {
+                Logger.Flush();
             }
         }
 
