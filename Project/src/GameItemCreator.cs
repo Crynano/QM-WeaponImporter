@@ -3,8 +3,6 @@ using QM_WeaponImporter.Templates.Descriptors;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering.Universal;
-using static MGSC.Localization;
 
 namespace QM_WeaponImporter
 {
@@ -121,7 +119,7 @@ namespace QM_WeaponImporter
             muzzle._additLightIntencityMult = 1f;
             muzzle._muzzleIntensityCurve = new AnimationCurve()
             {
-                keys = 
+                keys =
                 [
                      new Keyframe()
                      {
@@ -201,19 +199,19 @@ namespace QM_WeaponImporter
                 }
 
                 randomAttackAudios = Importer.ImportAudio(userWeapon.randomDryShotSoundBank);
-                if (randomAttackAudios.Length > 0)
+                if (randomAttackAudios.Length > 0 && myWeaponDescriptor._dryShotSoundBanks.Length > 0)
                 {
                     myWeaponDescriptor._dryShotSoundBanks[0]._clips = randomAttackAudios;
                 }
 
                 randomAttackAudios = Importer.ImportAudio(userWeapon.randomFailedAttackSoundBank);
-                if (randomAttackAudios.Length > 0)
+                if (randomAttackAudios.Length > 0 && myWeaponDescriptor._failedAttackSoundBanks.Length > 0)
                 {
                     myWeaponDescriptor._failedAttackSoundBanks[0]._clips = randomAttackAudios;
                 }
 
                 randomAttackAudios = Importer.ImportAudio(userWeapon.randomReloadSoundBank);
-                if (randomAttackAudios.Length > 0)
+                if (randomAttackAudios.Length > 0 && myWeaponDescriptor._reloadSoundBanks.Length > 0)
                 {
                     myWeaponDescriptor._reloadSoundBanks[0]._clips = randomAttackAudios;
                 }
@@ -222,16 +220,6 @@ namespace QM_WeaponImporter
             {
                 Logger.WriteToLog($"Trying to add sounds but: {e.Message}\n{e.StackTrace}", Logger.LogType.Error);
             }
-
-            
-
-            //AudioClip ac = new AudioClip("myweapon_default", int lengthSamples, int channels, int frequency, bool stream);
-            //myWeaponSoundBank._clips = 
-            //[
-
-            //];
-
-
 
             myWeapon.ContentDescriptor = myWeaponDescriptor;
             Logger.WriteToLog($"Weapon Descriptor for [{userWeapon.id}] has been added successfully!");
@@ -307,7 +295,7 @@ namespace QM_WeaponImporter
         #region Utilities
 
         public static void AddItemsToFactions(FactionTemplate factionTemplate)
-        { 
+        {
             AddToFactionTable(factionTemplate);
         }
 
@@ -334,7 +322,7 @@ namespace QM_WeaponImporter
                         short.TryParse(factionAndLevelSplit[1], out short factionRewardLevel);
                         // We have the number and the name, now get the table
                         // Do $"{factionName}_{tableName}" then index by the number in the tag.
-                        bool isTableFound = Data.FactionDrop._recordsByFactions.TryGetValue($"{factionName}_{tableName}", 
+                        bool isTableFound = Data.FactionDrop._recordsByFactions.TryGetValue($"{factionName}_{tableName}",
                             out Dictionary<int, List<ContentDropRecord>> itemFactionTable);
 
                         if (!isTableFound)
@@ -367,7 +355,7 @@ namespace QM_WeaponImporter
         // ex: item.weapon_id.name , item.weapon_id.shortdesc
         public static void AddLocalization(string type, string group, Dictionary<string, Dictionary<string, string>> localization)
         {
-            Dictionary<Lang, Dictionary<string, string>> localizationDb = MGSC.Localization.Instance.db;
+            Dictionary<MGSC.Localization.Lang, Dictionary<string, string>> localizationDb = Localization.Instance.db;
             foreach (KeyValuePair<string, Dictionary<string, string>> itemEntry in localization)
             {
                 foreach (KeyValuePair<string, string> locals in itemEntry.Value)

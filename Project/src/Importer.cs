@@ -7,6 +7,7 @@ using QM_WeaponImporter.Templates.Descriptors;
 using QM_WeaponImporter.Templates;
 using Newtonsoft.Json.Serialization;
 using System.Collections.Generic;
+using QM_WeaponImporter.Services;
 
 namespace QM_WeaponImporter
 {
@@ -73,27 +74,31 @@ namespace QM_WeaponImporter
             return null;
         }
 
+        private static IAudioImporter<AudioClip> audioImporter = new Services.UnityFileAudioImporter();
+
         public static AudioClip[] ImportAudio(List<string> audioPaths)
         {
-            return new AudioClip[0];
             List<AudioClip> result = new List<AudioClip>();
             foreach (string audioPath in audioPaths)
             {
-                result.Add(importAudio(audioPath));
+                var audioRes = ImportAudio(audioPath);
+                if (audioRes != null)
+                {
+                    result.Add(audioRes);
+                }
             }
             return result.ToArray();
         }
 
         public static AudioClip ImportAudio(string relativePath)
         {
-            return importAudio(relativePath);
-        }
-
-        private static AudioClip importAudio(string relativePath)
-        {
-            throw new NotImplementedException($"Audio is currently not implemented.");
-            return null;
+            // Use the new UnityAudioModule
             // Give a path, then import. If file does not exist then not
+            if (string.IsNullOrEmpty(relativePath))
+            {
+                Logger.WriteToLog($"Relative path when importing audio was null!", Logger.LogType.Error);
+                return null;
+            }
             string finalPath = Path.Combine(ConfigManager.rootFolder, relativePath);
             if (!File.Exists(finalPath))
             {
@@ -104,27 +109,7 @@ namespace QM_WeaponImporter
 
             //Get file
             Logger.WriteToLog($"Trying to recover audio: {relativePath}");
-            int sampleRate = 44100;
-            int channels = 2;
-            int position = 0;
-            int frequency = 440;
-            var samples = new float[sampleRate * channels];
-            int itemIndex = 0;
-            var audioBytes = File.ReadAllBytes(finalPath);
-            for(int i = 0; i < samples.Length; i = i+2)
-            {
-                samples[i] = audioBytes[itemIndex];
-                samples[i + 1] = audioBytes[itemIndex];
-                itemIndex++;
-            }
-
-            var matchPieceAudio = AudioClip.Create("SampleBeep", sampleRate, channels, frequency, false);
-            matchPieceAudio.SetData(samples, 0);
-
-            matchPieceAudio.name = relativePath;
-            //matchPieceAudio.LoadAudioData();
-            Logger.WriteToLog(matchPieceAudio == null ? "Success " : "Failed " + $"when recovering audio {relativePath}");
-            return matchPieceAudio;
+            return audioImporter.Import(finalPath);
         }
 
         /// <summary>
@@ -149,7 +134,10 @@ namespace QM_WeaponImporter
             CreateExampleFile(BootsTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(RepairTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
             CreateExampleFile(GrenadeTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(new MGSC.ItemTransformationRecord() { Id = "Example ID", OutputItems =
+            CreateExampleFile(new MGSC.ItemTransformationRecord()
+            {
+                Id = "Example ID",
+                OutputItems =
                 [new MGSC.ItemQuantity() { Count = 1, ItemId = "Item ID" }]
             }, Path.Combine(rootPath, "Examples"));
             CreateExampleFile(new MGSC.DatadiskRecord(), Path.Combine(rootPath, "Examples"));
