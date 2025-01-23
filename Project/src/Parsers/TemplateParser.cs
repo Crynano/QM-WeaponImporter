@@ -2,7 +2,7 @@
 using System;
 
 namespace QM_WeaponImporter;
-public class TemplateParser<T> : IConfigParser where T : class, new()
+internal class TemplateParser<T> : IConfigParser where T : class, new()
 {
     string identifier;
     Action<T> OnParsed;
@@ -16,7 +16,7 @@ public class TemplateParser<T> : IConfigParser where T : class, new()
 
     public void Parse(string data)
     {
-        Logger.WriteToLog($"Parsing {typeof(T).ToString()}");
+        Logger.LogInfo($"Parsing {typeof(T).ToString()}");
         T instance = JsonConvert.DeserializeObject<T>(data);
         OnParsed?.Invoke(instance);
     }

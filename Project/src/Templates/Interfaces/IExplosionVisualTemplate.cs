@@ -1,5 +1,5 @@
 ﻿namespace QM_WeaponImporter.Templates;
-public interface ExplosionVisualParameters
+internal interface ExplosionVisualParameters
 {
     public float visualDelay{ get; set; }
     //public ExplosionLightUpdater expLightUpdater{ get; set; }

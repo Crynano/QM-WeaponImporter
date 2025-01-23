@@ -3,7 +3,7 @@ using System;
 using Newtonsoft.Json.Serialization;
 
 namespace QM_WeaponImporter;
-public class NullableRecordParser<T> : IConfigParser where T : class, new()
+internal class NullableRecordParser<T> : IConfigParser where T : class, new()
 {
     string identifier;
     Action<T> OnParsed;

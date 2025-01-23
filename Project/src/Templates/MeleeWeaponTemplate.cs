@@ -36,7 +36,7 @@ namespace QM_WeaponImporter
                 id = "army_knife",
                 price = 100,
                 weight = 0.7f,
-                inventoryWidth = 2,
+                inventoryWidthSize = 2,
                 weaponClass = "Knife",
                 weaponSubClass = "Default",
                 grip = "meleeonehanded",
@@ -67,11 +67,7 @@ namespace QM_WeaponImporter
                 range = 1,
                 critPainDamageMultiplier = 1f,
                 painDamageMultiplier = 1f,
-                fovLookAngleMult = 1f,
-                randomAttackSoundBank = new List<string>() { "/Audio/Example/File.ogg" },
-                randomDryShotSoundBank = new List<string>() { "/Audio/Example/File.ogg" },
-                randomFailedAttackSoundBank = new List<string>() { "/Audio/Example/File.ogg" },
-                randomReloadSoundBank = new List<string>() { "/Audio/Example/File.ogg" },
+                fovLookAngleMult = 1f
             };
             return meleeWeapon;
         }

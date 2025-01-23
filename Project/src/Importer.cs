@@ -1,13 +1,11 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using QM_WeaponImporter.Services;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
-using Newtonsoft.Json;
-using QM_WeaponImporter.Templates.Descriptors;
-using QM_WeaponImporter.Templates;
-using Newtonsoft.Json.Serialization;
-using System.Collections.Generic;
-using QM_WeaponImporter.Services;
 
 namespace QM_WeaponImporter
 {
@@ -25,7 +23,7 @@ namespace QM_WeaponImporter
             {
                 if (value < 100f)
                 {
-                    Logger.WriteToLog($"imagePixelScaling is being set below 100. Issues may occur.\nValue: {value}", Logger.LogType.Warning);
+                    Logger.LogWarning($"imagePixelScaling is being set below 100. Issues may occur.\nValue: {value}");
                 }
                 _imagePixelScaling = value;
             }
@@ -34,15 +32,17 @@ namespace QM_WeaponImporter
         internal const string GlobalConfigName = "global_config.json";
 
         internal static string AssemblyFolder => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        internal static string DefaultConfigPath => Path.Combine(AssemblyFolder, GlobalConfigName);
         public static Sprite LoadNewSprite(string path)
         {
             string finalPath = Path.Combine(ConfigManager.rootFolder, path);
             if (!File.Exists(finalPath))
             {
-                Logger.WriteToLog($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
-                return null;
+                Logger.LogInfo($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
+                // Return a white texture why not.
+                return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 2, 2), Vector3.zero);
             }
-            Logger.WriteToLog($"Recovering image at: \"{path}\"\nFull path: \"{finalPath}\"");
+            Logger.LogInfo($"Recovering image at: \"{path}\"\nFull path: \"{finalPath}\"");
             Texture2D SpriteTexture = LoadTexture(finalPath);
             // Maybe we can adjust the size of the sprite.
             Rect oldRect = new Rect(0, 0, SpriteTexture.width, SpriteTexture.height);
@@ -68,7 +68,7 @@ namespace QM_WeaponImporter
                 }
                 catch (Exception e)
                 {
-                    Logger.WriteToLog($"Could not load image from {FilePath}. Error: {e.Message}", Logger.LogType.Error);
+                    Logger.LogError($"Could not load image from {FilePath}. Error: {e.Message}");
                 }
             }
             return null;
@@ -96,53 +96,19 @@ namespace QM_WeaponImporter
             // Give a path, then import. If file does not exist then not
             if (string.IsNullOrEmpty(relativePath))
             {
-                Logger.WriteToLog($"Relative path when importing audio was null!", Logger.LogType.Error);
+                Logger.LogError($"Relative path when importing audio was null!");
                 return null;
             }
             string finalPath = Path.Combine(ConfigManager.rootFolder, relativePath);
             if (!File.Exists(finalPath))
             {
                 //throw new NullReferenceException($"Audio at {finalPath} does not exist.");
-                Logger.WriteToLog($"Sound at {finalPath} does not exist", Logger.LogType.Error);
+                Logger.LogError($"Sound at {finalPath} does not exist");
                 return null;
             }
 
-            //Get file
-            Logger.WriteToLog($"Trying to recover audio: {relativePath}");
             return audioImporter.Import(finalPath);
         }
-
-        /// <summary>
-        /// Use this function to create default files so you can have examples on-demand.
-        /// </summary>
-        /// <param name="rootPath"></param>
-        public static void CreateExampleConfigFiles(string rootPath)
-        {
-            CreateExampleFile(new BulletTemplate(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(LocalizationTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(MeleeWeaponTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(RangedWeaponTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(FactionTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(new CustomItemContentDescriptor(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(MedTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(new MGSC.FoodRecord(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(new MGSC.TrashRecord(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(VestTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(HelmetTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(ArmorTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(LeggingsTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(BootsTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(RepairTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(GrenadeTemplate.GetExample(), Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(new MGSC.ItemTransformationRecord()
-            {
-                Id = "Example ID",
-                OutputItems =
-                [new MGSC.ItemQuantity() { Count = 1, ItemId = "Item ID" }]
-            }, Path.Combine(rootPath, "Examples"));
-            CreateExampleFile(new MGSC.DatadiskRecord(), Path.Combine(rootPath, "Examples"));
-        }
-
 
         public static void CreateGlobalConfig(string rootPath)
         {
@@ -154,25 +120,25 @@ namespace QM_WeaponImporter
             }
 
             // Maybe to help with this, import the file if exists, and if defaults are not there, add them?
-            CreateFile(Path.Combine(rootPath, GlobalConfigName), JsonConvert.SerializeObject(new ConfigTemplate(), Formatting.Indented));
+            FilesManager.CreateFile(Path.Combine(rootPath, GlobalConfigName), JsonConvert.SerializeObject(new ConfigTemplate(), Formatting.Indented));
         }
 
-        public static void CreateGlobalConfig(ConfigTemplate userConfig)
-        {
-            // GlobalConfigName
-            // Instance of default ConfigTemplate
-            string rootFolder = userConfig.rootFolder;
-            if (!Directory.Exists(rootFolder))
-            {
-                throw new NullReferenceException($"Directory {rootFolder} does not exist.");
-            }
+        //public static void CreateGlobalConfig(ConfigTemplate userConfig)
+        //{
+        //    // GlobalConfigName
+        //    // Instance of default ConfigTemplate
+        //    string rootFolder = userConfig.rootFolder;
+        //    if (!Directory.Exists(rootFolder))
+        //    {
+        //        throw new NullReferenceException($"Directory {rootFolder} does not exist.");
+        //    }
 
-            CreateFile(Path.Combine(rootFolder, GlobalConfigName), JsonConvert.SerializeObject(userConfig, Formatting.Indented));
-        }
+        //    FilesManager.CreateFile(Path.Combine(rootFolder, GlobalConfigName), JsonConvert.SerializeObject(userConfig, Formatting.Indented));
+        //}
 
         public static ConfigTemplate GetGlobalConfig(string path)
         {
-            Logger.WriteToLog($"Loading global config at \"{path}\"");
+            Logger.LogInfo($"Loading global config at \"{path}\"");
             string fullPath = Path.Combine(path, GlobalConfigName);
             if (!File.Exists(fullPath))
             {
@@ -190,26 +156,6 @@ namespace QM_WeaponImporter
             var config = JsonConvert.DeserializeObject<ConfigTemplate>(importedString, settings);
 
             return config;
-        }
-
-        private static void CreateExampleFile<T>(T objectType, string folderPath)
-        {
-            if (objectType == null) return;
-            string content = JsonConvert.SerializeObject(objectType, Formatting.Indented);
-            Directory.CreateDirectory(folderPath);
-            CreateFile(Path.Combine(folderPath, $"example_{objectType.GetType().Name}.json"), content);
-        }
-
-        private static void CreateFile(string filePath, string content, bool overrideFile = false)
-        {
-            if (File.Exists(filePath) && !overrideFile)
-            {
-                // No need to flood...
-                //Logger.WriteToLog($"File exists at {filePath}.Not creating a new one.", Logger.LogType.Warning);
-                return;
-            }
-            Logger.WriteToLog($"Creating file {filePath}");
-            File.WriteAllText(filePath, content);
         }
     }
 }

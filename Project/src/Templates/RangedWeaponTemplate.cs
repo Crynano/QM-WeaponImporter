@@ -32,7 +32,7 @@ namespace QM_WeaponImporter
                 id = "army_pistol",
                 price = 100,
                 weight = 2f,
-                inventoryWidth = 2,
+                inventoryWidthSize = 2,
                 weaponClass = "Pistol",
                 weaponSubClass = "Firearm",
                 grip = "Pistol",
@@ -70,11 +70,7 @@ namespace QM_WeaponImporter
                 minDmgCapBonus = 0,
                 rampUpValue = 0,
                 fovLookAngleMult = 1f,
-                hasHFGOverlay = false,
-                randomAttackSoundBank = new List<string>() { "Assets/Audio/Example/File.ogg" },
-                randomDryShotSoundBank = new List<string>() { "Assets/Audio/Example/File.ogg" },
-                randomFailedAttackSoundBank = new List<string>() { "Assets/Audio/Example/File.ogg" },
-                randomReloadSoundBank = new List<string>() { "Assets/Audio/Example/File.ogg" },
+                hasHFGOverlay = false
             };
             return rangedWeapon;
         }

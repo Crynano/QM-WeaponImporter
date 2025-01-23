@@ -4,27 +4,27 @@ using UnityEngine.Networking;
 
 namespace QM_WeaponImporter.Services
 {
-    public class UnityFileAudioImporter : IAudioImporter<AudioClip>
+    internal class UnityFileAudioImporter : IAudioImporter<AudioClip>
     {
         public AudioClip Import(string path)
         {
             AudioType audioType = AnalyzeAudioType(path, out string fileName);
             if (audioType == AudioType.UNKNOWN)
             {
-                Logger.WriteToLog($"Audio: {path}\nERROR: AudioType was not identified correctly.");
+                Logger.LogInfo($"Audio: {path}\nERROR: AudioType was not identified correctly.");
                 return null;
             }
             UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip("file://" + path, audioType);
             request.SendWebRequest();
             do
             {
-                Console.WriteLine($"Iterating in console waiting for the request!");
+                //Console.WriteLine($"Iterating in console waiting for the request!");
             }
             while (!request.isDone);
 
             if (request.isNetworkError)
             {
-                Logger.WriteToLog($"Got a network error in AudioImporting!", Logger.LogType.Error);
+                Logger.LogError($"Got a network error in AudioImporting!");
             }
             else
             {
@@ -42,7 +42,7 @@ namespace QM_WeaponImporter.Services
             fileName = completeFile.Split('.')[0];
             string fileExtension = completeFile.Split('.')[1];
             Enum.TryParse(fileExtension.ToUpper(), out AudioType audioType);
-            Logger.WriteToLog($"Audio Analysis: {path}\n{fileName}\n{fileExtension}\n{audioType}");
+            //Logger.LogInfo($"Audio Analysis: {path} from {fileName} with {fileExtension}\n{audioType}");
             return audioType;
         }
     }

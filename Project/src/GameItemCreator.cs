@@ -1,18 +1,18 @@
 using MGSC;
-using QM_WeaponImporter.Templates.Descriptors;
+using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace QM_WeaponImporter
 {
-    public static class GameItemCreator
+    internal static class GameItemCreator
     {
         public static bool CreateWeapon(WeaponTemplate userWeapon, CustomItemContentDescriptor weaponDescriptor)
         {
             try
             {
-                Logger.WriteToLog($"Creating weapon with ID: {userWeapon.id}");
+                Logger.LogInfo($"Creating weapon with ID: {userWeapon.id}");
                 WeaponRecord myWeapon = new WeaponRecord();
                 if (userWeapon.GetType() == typeof(MeleeWeaponTemplate))
                 {
@@ -28,11 +28,12 @@ namespace QM_WeaponImporter
                 SetDescriptorProperties(ref myWeapon, userWeapon, weaponDescriptor);
                 //myWeapon.DefineClassTraits();
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
+                Logger.LogInfo($"Weapon [{myWeapon.Id}] LOADED");
                 return true;
             }
             catch (Exception e)
             {
-                Logger.WriteToLog($"Weapon [{userWeapon.id}] couldn't be added.\n{e.Message}\n{e.Source}");
+                Logger.LogWarning($"Weapon [{userWeapon.id}] couldn't be added.\n{e.Message}\n{e.StackTrace}");
                 Logger.FlushAdditive();
                 return false;
             }
@@ -87,41 +88,51 @@ namespace QM_WeaponImporter
 
             myWeaponDescriptor._overridenRenderId = userWeapon.id;
 
-            Sprite itemSprite = Importer.LoadNewSprite(weaponDescriptor.iconSpritePath);
-            if (itemSprite != null)
-                myWeaponDescriptor._icon = itemSprite;
-
-            Sprite smallIconSprite = Importer.LoadNewSprite(weaponDescriptor.smallIconSpritePath);
-            if (smallIconSprite != null)
-                myWeaponDescriptor._smallIcon = smallIconSprite;
-
-            Sprite shadowSprite = Importer.LoadNewSprite(weaponDescriptor.shadowOnFloorSpritePath);
-            if (shadowSprite != null)
-                myWeaponDescriptor._shadow = shadowSprite;
+            // Icons
+            myWeaponDescriptor._icon = Importer.LoadNewSprite(weaponDescriptor.iconSpritePath);
+            myWeaponDescriptor._smallIcon = Importer.LoadNewSprite(weaponDescriptor.smallIconSpritePath);
+            myWeaponDescriptor._shadow = Importer.LoadNewSprite(weaponDescriptor.shadowOnFloorSpritePath);
 
             // If grip is null then a bunch of problems will arise.
-            if (userWeapon.grip == null || userWeapon.grip.Equals(string.Empty))
-            {
-                myWeaponDescriptor._grip = HandsGrip.BareHands;
-            }
-            else
-            {
-                myWeaponDescriptor._grip = StringToEnum<MGSC.HandsGrip>(userWeapon.grip);
-            }
+            myWeaponDescriptor._grip = string.IsNullOrEmpty(userWeapon.grip) ? HandsGrip.BareHands : StringToEnum<HandsGrip>(userWeapon.grip);
 
+            // TODO Set prefab?
+            myWeaponDescriptor._prefab = new GameObject("Empty GO");
+            myWeaponDescriptor._texture = Texture2D.whiteTexture;
+
+            // HFG Overlay?
             myWeaponDescriptor._hasHFGOverlay = userWeapon.hasHFGOverlay;
-
-            // TODO: Still have to implement
-            var foundMuzzles = MonoBehaviour.FindObjectsOfType<Muzzle>();
-            List<Muzzle> singleMuzzle = [.. foundMuzzles];
-            GameObject muzzleGo = new GameObject("Test Muzzle");
-            Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
-            muzzle._additLightIntencityMult = 1f;
-            muzzle._muzzleIntensityCurve = new AnimationCurve()
+            bool muzzleApplied = false;
+            if (!string.IsNullOrEmpty(weaponDescriptor.baseItemId))
             {
-                keys =
-                [
-                     new Keyframe()
+                if (Data.Items._records.ContainsKey(weaponDescriptor.baseItemId))
+                {
+                    var overridePropertiesWeapon = MGSC.Data.Items.GetSimpleRecord<WeaponRecord>(weaponDescriptor.baseItemId);
+                    if (overridePropertiesWeapon != null)
+                    {
+                        Logger.LogInfo($"Applying on {myWeapon.Id} the muzzle from {weaponDescriptor.baseItemId}");
+                        WeaponDescriptor overrideWeaponDescriptor = ((WeaponDescriptor)overridePropertiesWeapon.ContentDescriptor);
+                        myWeaponDescriptor._muzzles = overrideWeaponDescriptor._muzzles;
+                        muzzleApplied = true;
+                    }
+                }
+                else
+                {
+                    Logger.LogWarning($"Item with base ID not found: {weaponDescriptor.baseItemId}");
+                }
+            }
+            // If no specified or failed. Then apply default
+            if (!muzzleApplied)
+            {
+                Logger.LogInfo($"Muzzle wasn't herited, applying by default");
+                GameObject muzzleGo = new GameObject("Test Muzzle");
+                Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
+                muzzle._additLightIntencityMult = .5f;
+                muzzle._muzzleIntensityCurve = new AnimationCurve()
+                {
+                    keys =
+                    [
+                         new Keyframe()
                      {
                          time = 0,
                          value = 0,
@@ -131,13 +142,14 @@ namespace QM_WeaponImporter
                          time = .2f,
                          value = 0.5f,
                      }
-                ],
+                    ],
 
-            };
-            myWeaponDescriptor._muzzles =
-            [
-                muzzle
-            ];
+                };
+                myWeaponDescriptor._muzzles =
+                [
+                    muzzle
+                ];
+            }
 
             //BulletTemplate userBullet = Importer.Load<BulletTemplate>(userWeapon.bulletAssetPath);
             //List<Sprite> facadeDecalsSprites = new List<Sprite>();
@@ -163,78 +175,57 @@ namespace QM_WeaponImporter
             //    _putDecals = userBullet.putDecals
             //};
 
-            MGSC.Data.Descriptors.TryGetValue("meleeweapons", out DescriptorsCollection meleeWeaponsDescriptors);
-            // This gets the army_knife sounds by default
-            if ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0] != null)
-            {
-                myWeaponDescriptor._attackSoundBanks = ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0])._attackSoundBanks;
-                myWeaponDescriptor._dryShotSoundBanks = ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0])._dryShotSoundBanks;
-                myWeaponDescriptor._failedAttackSoundBanks = ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0])._failedAttackSoundBanks;
-                myWeaponDescriptor._reloadSoundBanks = ((WeaponDescriptor)meleeWeaponsDescriptors._descriptors[0])._reloadSoundBanks;
-            }
-
             try
             {
-
-                // Custom sound bank.
-                AudioClip[] randomAttackAudios = Importer.ImportAudio(userWeapon.randomAttackSoundBank);
-                if (randomAttackAudios.Length > 0)
+                MGSC.Data.Descriptors.TryGetValue("meleeweapons", out DescriptorsCollection rngWps);
+                // This some sounds by default  
+                // This will also provide the weapon with initialized soundbanks.
+                // With a good configuration
+                var rangedWeaponDescriptor = (WeaponDescriptor)rngWps._descriptors[0];
+                if (rangedWeaponDescriptor != null)
                 {
-                    myWeaponDescriptor._attackSoundBanks = new SoundBank[]
-                    {
-                        new SoundBank()
-                        {
-                            name = $"{userWeapon.id}_soundbank",
-                            _maxDistanceInCells = 10,
-                            _minDistanceInCells = 6,
-                            _pitch = 1f,
-                            _priority = 128,
-                            _rolloffMode = AudioRolloffMode.Linear,
-                            _spatialBlend = 1f,
-                            _stereoPan = 0f,
-                            _volume = 0.4f,
-                            _clips = randomAttackAudios
-                        }
-                    };
+                    myWeaponDescriptor._attackSoundBanks = rangedWeaponDescriptor._attackSoundBanks;
+                    myWeaponDescriptor._dryShotSoundBanks = rangedWeaponDescriptor._dryShotSoundBanks;
+                    myWeaponDescriptor._failedAttackSoundBanks = rangedWeaponDescriptor._failedAttackSoundBanks;
+                    myWeaponDescriptor._reloadSoundBanks = rangedWeaponDescriptor._reloadSoundBanks;
                 }
-
-                randomAttackAudios = Importer.ImportAudio(userWeapon.randomDryShotSoundBank);
-                if (randomAttackAudios.Length > 0 && myWeaponDescriptor._dryShotSoundBanks.Length > 0)
-                {
-                    myWeaponDescriptor._dryShotSoundBanks[0]._clips = randomAttackAudios;
-                }
-
-                randomAttackAudios = Importer.ImportAudio(userWeapon.randomFailedAttackSoundBank);
-                if (randomAttackAudios.Length > 0 && myWeaponDescriptor._failedAttackSoundBanks.Length > 0)
-                {
-                    myWeaponDescriptor._failedAttackSoundBanks[0]._clips = randomAttackAudios;
-                }
-
-                randomAttackAudios = Importer.ImportAudio(userWeapon.randomReloadSoundBank);
-                if (randomAttackAudios.Length > 0 && myWeaponDescriptor._reloadSoundBanks.Length > 0)
-                {
-                    myWeaponDescriptor._reloadSoundBanks[0]._clips = randomAttackAudios;
-                }
+                SetSounds(ref myWeaponDescriptor._attackSoundBanks, weaponDescriptor.shootSoundPath, 0);
+                SetSounds(ref myWeaponDescriptor._dryShotSoundBanks, weaponDescriptor.dryShotSoundPath, 1);
+                SetSounds(ref myWeaponDescriptor._failedAttackSoundBanks, weaponDescriptor.failedAttackSoundPath, 2);
+                SetSounds(ref myWeaponDescriptor._reloadSoundBanks, weaponDescriptor.reloadSoundPath, 3);
             }
             catch (Exception e)
             {
-                Logger.WriteToLog($"Trying to add sounds but: {e.Message}\n{e.StackTrace}", Logger.LogType.Error);
+                Logger.LogError($"Trying to add sounds but: {e.Message}\n{e.StackTrace}");
             }
 
             myWeapon.ContentDescriptor = myWeaponDescriptor;
-            Logger.WriteToLog($"Weapon Descriptor for [{userWeapon.id}] has been added successfully!");
+            Logger.LogInfo($"Weapon Descriptor for [{userWeapon.id}] has been added successfully!");
         }
 
         #region Configurators
         private static void SetCommonProperties(ref WeaponRecord myWeapon, WeaponTemplate userWeapon)
         {
+            // TODO FIX THIS
             myWeapon.Id = userWeapon.id;
             myWeapon.Price = userWeapon.price;
             myWeapon.Weight = userWeapon.weight;
-            myWeapon.InventoryWidthSize = userWeapon.inventoryWidth;
+            myWeapon.InventoryWidthSize = userWeapon.inventoryWidthSize;
+            myWeapon.TechLevel = userWeapon.techLevel;
+            myWeapon.Categories = userWeapon.categories;
+            myWeapon.IsImplicit = userWeapon.isImplicit;
+            myWeapon.ItemClass = StringToEnum<ItemClass>(userWeapon.itemClass);
             myWeapon.WeaponClass = StringToEnum<WeaponClass>(userWeapon.weaponClass);
             myWeapon.WeaponSubClass = StringToEnum<WeaponSubClass>(userWeapon.weaponSubClass);
             myWeapon.DefaultAmmoId = userWeapon.defaultAmmoId;
+            // Let's throw a warning to the user just in case.
+            if (!MGSC.Data.Items._records.ContainsKey(userWeapon.defaultAmmoId))
+            {
+                // Does not contain value
+                Logger.LogError($"Weapon won't load, ammunition does not exist.");
+                throw new NullReferenceException($"Ammunition with {userWeapon.defaultAmmoId} does not exist in the game data");
+            }
+
             myWeapon.Damage = new DmgInfo()
             {
                 minDmg = userWeapon.minimumDamage,
@@ -260,13 +251,12 @@ namespace QM_WeaponImporter
             myWeapon.PainDamageMult = userWeapon.painDamageMultiplier;
             myWeapon.CritPainDamageMult = userWeapon.critPainDamageMultiplier;
             myWeapon.OffSlotCritChance = userWeapon.offSlotCritChance;
-            myWeapon.RampUpValue = userWeapon.rampUpValue;
             myWeapon.FovLookAngleMult = userWeapon.fovLookAngleMult;
         }
 
         private static void ConfigureMeleeWeapon(ref WeaponRecord myWeapon, MeleeWeaponTemplate userWeapon)
         {
-            myWeapon.IsMelee = userWeapon.isMelee;
+            myWeapon.IsMelee = true;
             myWeapon.DurabilityLossOnThrow = userWeapon.durabilityLossOnThrow;
             myWeapon.ThrowRange = userWeapon.throwRange;
             myWeapon.MeleeCanAmputate = userWeapon.canMeleeAmputate;
@@ -279,6 +269,8 @@ namespace QM_WeaponImporter
 
         private static void ConfigureRangedWeapon(ref WeaponRecord myWeapon, RangedWeaponTemplate userWeapon)
         {
+            myWeapon.IsMelee = false;
+            myWeapon.ArmorPenetration = userWeapon.armorPenetration;
             myWeapon.RangeExtraThrowback = userWeapon.rangeExtraThrowback;
             myWeapon.RangeThrowbackChanceBonus = userWeapon.rangeThrowbackChanceBonus;
             myWeapon.BonusScatterAngle = userWeapon.bonusScatterAngle;
@@ -289,6 +281,7 @@ namespace QM_WeaponImporter
             myWeapon.WoundChanceOnPierce = userWeapon.woundChanceOnPierce;
             myWeapon.DefaultGrenadeId = userWeapon.defaultGrenadeId;
             myWeapon.AllowedGrenadeIds = userWeapon.AllowedGrenadeIds;
+            myWeapon.RampUpValue = userWeapon.rampUpValue;
         }
         #endregion
 
@@ -301,51 +294,15 @@ namespace QM_WeaponImporter
 
         private static void AddToFactionTable(FactionTemplate factionTemplate)
         {
-            // Just add them, how difficult can it be? :P
-            // Get the list from Data. Check if it exists
-            // Because we don't have any, we have to get the name of the table?
-            // Then if exists, search for the difficulty number under the list
-            // If it exists, then add the item to the list
-            string tableName = "rewardEquipment";
-            var selectedTable = factionTemplate.Items;
-            // Get the table name, this case it will always be the equipmentReward
-
+            var selectedTable = factionTemplate.FactionRewardList;
             foreach (var factionRewardTable in selectedTable)
             {
-                for (int i = 0; i < factionRewardTable.factionTags.Count; i++)
+                Logger.LogInfo($"Adding rewards to {factionRewardTable.TableName} with {factionRewardTable.contentRecords.Count} items!");
+                foreach (var rewardEntry in factionRewardTable.contentRecords)
                 {
-                    string[] factionAndLevelSplit = factionRewardTable.factionTags[i].Split('_');
-                    // Ensure we have 2 entries, the name and the level
-                    if (factionAndLevelSplit.Length == 2)
-                    {
-                        string factionName = factionAndLevelSplit[0];
-                        short.TryParse(factionAndLevelSplit[1], out short factionRewardLevel);
-                        // We have the number and the name, now get the table
-                        // Do $"{factionName}_{tableName}" then index by the number in the tag.
-                        bool isTableFound = Data.FactionDrop._recordsByFactions.TryGetValue($"{factionName}_{tableName}",
-                            out Dictionary<int, List<ContentDropRecord>> itemFactionTable);
-
-                        if (!isTableFound)
-                        {
-                            Logger.WriteToLog($"Could not find faction table for {factionName}", Logger.LogType.Warning);
-                            continue;
-                        }
-
-                        if (factionRewardLevel < 0 || factionRewardLevel > 10)
-                        {
-                            Logger.WriteToLog($"Faction ID is over the limits. (0,10] and the value is {factionRewardLevel}", Logger.LogType.Warning);
-                            continue;
-                        }
-                        // Here we have the table, so we index and add.
-                        itemFactionTable.TryGetValue(factionRewardLevel, out List<ContentDropRecord> itemFactionRecords);
-                        // Can't be null because its supposed to be in this range. It could not be initialized but oh well.
-                        if (itemFactionRecords == null)
-                        {
-                            Logger.WriteToLog($"No faction rewards for {factionName} at level {factionRewardLevel}.");
-                            continue;
-                        }
-                        itemFactionRecords.AddRange(factionRewardTable.contentRecords);
-                    }
+                    // Devs really pulled an easy on us huh.
+                    Logger.LogInfo($"Adding {factionRewardTable.TableName}");
+                    Data.FactionDrop.AddRecord(factionRewardTable.TableName, rewardEntry);
                 }
             }
         }
@@ -375,6 +332,47 @@ namespace QM_WeaponImporter
             }
         }
 
+        private static void SetSounds(ref SoundBank[] soundBank, string soundPath, int category)
+        {
+            if (soundBank == null)
+            {
+                return;
+            }
+
+            AudioClip audioClip = Importer.ImportAudio(soundPath);
+            if (audioClip == null)
+            {
+                soundBank = GetAudiosFromExistingWeapons(soundPath, category);
+                return;
+            }
+            if (audioClip != null && soundBank.Length > 0)
+            {
+                soundBank[0]._clips[0] = audioClip;
+            }
+        }
+
+        private static SoundBank[] GetAudiosFromExistingWeapons(string id, int category)
+        {
+            if (Data.Items._records.ContainsKey(id))
+            {
+                var referenceWeapon = MGSC.Data.Items.GetSimpleRecord<WeaponRecord>(id);
+                Debug.Log($"Sound reference weapon is {referenceWeapon.Id}");
+                switch (category)
+                {
+                    case 0: return ((WeaponDescriptor)referenceWeapon.ContentDescriptor)._attackSoundBanks;
+                    case 1: return ((WeaponDescriptor)referenceWeapon.ContentDescriptor)._dryShotSoundBanks;
+                    case 2: return ((WeaponDescriptor)referenceWeapon.ContentDescriptor)._failedAttackSoundBanks;
+                    case 3: return ((WeaponDescriptor)referenceWeapon.ContentDescriptor)._reloadSoundBanks;
+                    default: return new SoundBank[] { };
+                }
+            }
+            else
+            {
+                Logger.LogWarning($"Item with base ID not found: {id}");
+                return new SoundBank[] { };
+            }
+        }
+
         private static T StringToEnum<T>(string type) where T : Enum
         {
             foreach (T wClass in Enum.GetValues(typeof(T)))
@@ -382,6 +380,15 @@ namespace QM_WeaponImporter
                 if (wClass.ToString().ToLower().Contains(type.ToLower())) return wClass;
             }
             return (T)Enum.ToObject(typeof(T), 0);
+        }
+
+        public static T CopyComponent<T>(T original, GameObject destination) where T : Component
+        {
+            var type = original.GetType();
+            var copy = destination.AddComponent(type);
+            var fields = type.GetFields();
+            foreach (var field in fields) field.SetValue(copy, field.GetValue(original));
+            return copy as T;
         }
 
         #endregion

@@ -8,16 +8,20 @@ namespace QM_WeaponImporter
         [Hook(ModHookType.AfterConfigsLoaded)]
         public static void Start(IModContext context)
         {
-            Importer.CreateExampleConfigFiles(Importer.AssemblyFolder);
-            Importer.CreateGlobalConfig(Importer.AssemblyFolder);
+            Logger.LogInfo("Starting ModConfigLoad from QM_WeaponImporter");
             try
             {
-                ConfigManager.ImportConfig(Importer.GetGlobalConfig(Importer.AssemblyFolder));
+                // This library (for testing) loads from the same folder too.
+                if (ConfigManager.ImportDefaultConfig())
+                {
+                    Logger.LogInfo("Test mod is loaded!");
+                }
+                // it only use is as API.
+                Logger.LogInfo($"QM_LiteItemImporter API Loaded!");
             }
             catch (Exception e)
             {
-                Logger.WriteToLog($"Error while importing. \n{e.Message}\n{e.InnerException}\n{e.StackTrace}",
-                    Logger.LogType.Error);
+                Logger.LogError($"Error while importing. \n{e.Message}\n{e.InnerException}\n{e.StackTrace}");
             }
             finally
             {

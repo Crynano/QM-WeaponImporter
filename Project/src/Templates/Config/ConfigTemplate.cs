@@ -9,42 +9,43 @@ namespace QM_WeaponImporter
     public class ConfigTemplate
     {
         /// <summary>
-        /// An absolute path to determine the root folder where assets are located.
-        /// </summary>
-        public string rootFolder { get; set; }
-
-        /// <summary>
         /// In relative pathing. (Relative to RootFolder)
         /// </summary>
         public string descriptorsPath { get; set; }
 
         /// <summary>
+        /// Path to the localization file / folder
+        /// </summary>
+        public Dictionary<string, string> localizationPaths { get; set; }
+
+        /// <summary>
         /// Sets the pixels per unit for loading images. 50% is double the size. 200% is half the size.
         /// </summary>
         public float imagePixelScale { get; set; }
-        public Dictionary<string, string> localizationPaths { get; set; }
+
+        /// <summary>
+        /// Folder paths for all config files
+        /// Could include sounds, localization, and more
+        /// </summary>
         public Dictionary<string, string> folderPaths { get; set; }
 
         public ConfigTemplate()
         {
-            rootFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Replace("\\", "/");
-            descriptorsPath = "Assets/Descriptors";
+            //rootFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Replace("\\", "/");
             imagePixelScale = 200f;
-            localizationPaths = new Dictionary<string, string> 
+            descriptorsPath = "Assets/Descriptors";
+            localizationPaths = new Dictionary<string, string>()
             {
-                { "item", "Assets/localizations/item_localization.json" }
+                { "item", "Assets/Localization"}
             };
             folderPaths = new Dictionary<string, string>
             {
+                { "sounds", "Assets/Sounds" },
                 { "trash", "Assets/Config/trash" },
                 { "ammo", "Assets/Config/ammo" },
+                { "firemodes", "Assets/Config/firemodes" },
                 { "meleeweapons", "Assets/Config/meleeweapons" },
                 { "rangedweapons", "Assets/Config/rangedweapons" },
-                { "itemtransforms", "Assets/Config/itemtransforms" },
-                { "itemreceipts", "Assets/Config/itemreceipts" },
-                { "workbenchreceipts", "Assets/Config/workbenchreceipts" },
-                { "datadisks", "Assets/Config/datadisks" },
-                { "factionconfig", "Assets/Config/factionconfig" },
                 { "backpacks", "Assets/Config/backpacks" },
                 { "vests", "Assets/Config/vests" },
                 { "helmets", "Assets/Config/helmets" },
@@ -55,13 +56,17 @@ namespace QM_WeaponImporter
                 { "grenades", "Assets/Config/grenades" },
                 { "mines", "Assets/Config/mines" },
                 { "medkits", "Assets/Config/medkits" },
-                { "consumables", "Assets/Config/consumables" }
+                { "consumables", "Assets/Config/consumables" },
+                { "itemtransforms", "Assets/Config/itemtransforms" },
+                { "itemreceipts", "Assets/Config/itemreceipts" },
+                { "workbenchreceipts", "Assets/Config/workbenchreceipts" },
+                { "datadisks", "Assets/Config/datadisks" },
+                { "factionconfig", "Assets/Config/factionconfig" },
             };
         }
 
-        public ConfigTemplate(string rootFolder, string descriptorsPath, float imagePixelScale, Dictionary<string, string> localizationPaths, Dictionary<string, string> folderPaths)
+        public ConfigTemplate(string descriptorsPath, float imagePixelScale, Dictionary<string, string> localizationPaths, Dictionary<string, string> folderPaths)
         {
-            this.rootFolder = rootFolder;
             this.descriptorsPath = descriptorsPath;
             this.imagePixelScale = imagePixelScale;
             this.localizationPaths = localizationPaths;
@@ -73,6 +78,11 @@ namespace QM_WeaponImporter
     public enum LoadOrder
     {
         // Descriptors
+        sounds,
+        trash,
+        descriptors,
+        itemreceipts,
+        itemtransforms,
         ammo,
         rangedweapons,
         meleeweapons,

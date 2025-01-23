@@ -4,7 +4,7 @@ using System;
 using System.Reflection;
 
 namespace QM_WeaponImporter;
-public class ImportParser<T> : IConfigParser where T : class, new()
+internal class ImportParser<T> : IConfigParser where T : class, new()
 {
     string identifier;
     Action<T> OnParsed;
@@ -26,7 +26,7 @@ public class ImportParser<T> : IConfigParser where T : class, new()
         jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
         jsonSettings.ContractResolver = resolver;
 
-        Logger.WriteToLog($"Parsing {typeof(T).ToString()}");
+        Logger.LogInfo($"Parsing {typeof(T).ToString()}");
         T instance = JsonConvert.DeserializeObject<T>(data, jsonSettings);
         OnParsed?.Invoke(instance);
     }

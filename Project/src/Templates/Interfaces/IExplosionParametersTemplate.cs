@@ -1,5 +1,5 @@
 ﻿namespace QM_WeaponImporter.Templates;
-public interface IExplosionParametersTemplate
+internal interface IExplosionParametersTemplate
 {
     public bool visualExplosion { get; set; }
     public int radius { get; set; }

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QM_WeaponImporter", "QM_WeaponImporter.csproj", "{B1722339-8C1E-4FF1-AAD9-508557297CC8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QM_LiteItemImporter", "QM_LiteItemImporter.csproj", "{B1722339-8C1E-4FF1-AAD9-508557297CC8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

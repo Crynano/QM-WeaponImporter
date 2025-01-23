@@ -1,7 +1,6 @@
 using MGSC;
 using Newtonsoft.Json;
 using QM_WeaponImporter.Templates;
-using QM_WeaponImporter.Templates.Descriptors;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,7 +15,7 @@ namespace QM_WeaponImporter
     // BUt if multiple mods are loading stuff at the same time, they should have the file or class and say, load these weapons please.
     // The class should include the root folder. Maybe a simple ../ would work but let's check.
     // We can assume it wont be needed but yeah.
-    public static class ConfigManager
+    internal static class ConfigManager
     {
         public static string rootFolder;
 
@@ -27,14 +26,13 @@ namespace QM_WeaponImporter
 
         private static void LoadDescriptors(ConfigTemplate userConfig)
         {
-            Logger.WriteToLog($"Loading descriptors");
+            Logger.LogInfo($"Loading descriptors");
             Parsers.Add(new TemplateParser<CustomItemContentDescriptor>("descriptorsPath", itemDescriptors.Add));
             KeyValuePair<string, string> descriptorsEntry = new KeyValuePair<string, string>("descriptorsPath", userConfig.descriptorsPath);
             if (!ParseFile(descriptorsEntry))
             {
                 // If it doesn't work, interrupt
-                Logger.WriteToLog($"Interrupting Mod Load: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.", Logger.LogType.Error);
-                Logger.Flush();
+                Logger.LogError($"Interrupting Mod Load: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
                 throw new NullReferenceException($"Critical error: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
             }
         }
@@ -48,27 +46,38 @@ namespace QM_WeaponImporter
                 {
                     try
                     {
-                        string content = File.ReadAllText(Path.Combine(rootFolder, filePath.Value));
-                        LocalizationTemplate json = JsonConvert.DeserializeObject<LocalizationTemplate>(content);
+                        string folderPath = Path.Combine(rootFolder, filePath.Value);
+                        if (!Directory.Exists(folderPath))
+                        {
+                            Logger.LogError($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
+                            return false;
+                        }
+                        DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
+                        FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
+                        foreach (FileInfo singleFile in files)
+                        {
+                            string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
+                            LocalizationTemplate json = JsonConvert.DeserializeObject<LocalizationTemplate>(configItemContent);
 
-                        // for now with the mod being item focused, the template is only concerned with name and shortdesc
-                        // this can be expanded later
-                        GameItemCreator.AddLocalization(filePath.Key, "name", json.name);
-                        GameItemCreator.AddLocalization(filePath.Key, "shortdesc", json.shortdesc);
+                            // for now with the mod being item focused, the template is only concerned with name and shortdesc
+                            // this can be expanded later
+                            GameItemCreator.AddLocalization(filePath.Key, "name", json.name);
+                            GameItemCreator.AddLocalization(filePath.Key, "shortdesc", json.shortdesc);
 
-                        Logger.WriteToLog($"Localization loaded successfully for {filePath.Value}");
+                            Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
+                        }
                     }
                     catch (Exception e)
                     {
-                        Logger.WriteToLog($"Failed for {filePath.Value}.\n{e.Message}\n{e.StackTrace}", Logger.LogType.Error);
-                        return false;
+                        Logger.LogError($"Failed for {filePath.Value}.\n{e.Message}\n{e.StackTrace}");
+                        continue;
                     }
                 }
                 return true;
             }
             else
             {
-                Logger.WriteToLog($"No Localization file path set.");
+                Logger.LogInfo($"No Localization file path set.");
                 return false;
             }
         }
@@ -80,7 +89,6 @@ namespace QM_WeaponImporter
             // ------- eliminate MeleeWeaponTemplate
             Parsers.Add(new NullableRecordParser<AmmoRecord>("ammo", delegate (AmmoRecord ammoItem)
             {
-                Logger.WriteToLog($"Parsing [{ammoItem.Id}]");
                 CustomItemContentDescriptor customItemDescriptor = GetDescriptor(ammoItem.Id);
                 Data.Descriptors.TryGetValue("ammo", out DescriptorsCollection ammoDescriptors);
                 AmmoDescriptor baseAmmo = ammoDescriptors.GetDescriptor(customItemDescriptor.baseItemId) as AmmoDescriptor;
@@ -122,7 +130,7 @@ namespace QM_WeaponImporter
                 MGSC.Data.WorkbenchReceipts.Add(itemWorkbenchReceiptRecord);
                 itemWorkbenchReceiptRecord.GenerateId();
             }));
-            Parsers.Add(new ImportParser<DatadiskRecord>("datadisks", delegate (DatadiskRecord datadiskRecord)
+            Parsers.Add(new NullableRecordParser<DatadiskRecord>("datadisks", delegate (DatadiskRecord datadiskRecord)
             {
                 CompositeItemRecord itemRecord = (CompositeItemRecord)MGSC.Data.Items.GetRecord(datadiskRecord.Id);
                 if (itemRecord != null) // Append to existing chip if already exists
@@ -132,7 +140,7 @@ namespace QM_WeaponImporter
                 }
                 else // Create new chip if doesn't exist
                 {
-                    Logger.WriteToLog($"Creating new datachips not implemented. Chip id {datadiskRecord.Id}");
+                    Logger.LogInfo($"Creating new datachips not implemented. Chip id {datadiskRecord.Id}");
                     // TODO -- new chips have a descriptor attached, not sure how to do this yet
                     //MGSC.Data.Items.AddRecord(datadiskRecord.Id, datadiskRecord);
                     //datadiskRecord.ContentDescriptor = descs.GetDescriptor(datadiskRecord.Id);
@@ -148,18 +156,18 @@ namespace QM_WeaponImporter
                 backpackItem.ContentDescriptor = itemContentDescriptor;
                 AddItemToGame(backpackItem);
             }));
-            Parsers.Add(new NullableRecordParser<MedkitRecord>("medkits", delegate (MedkitRecord item)
+            //Parsers.Add(new NullableRecordParser<ConsumableRecord>("medkits", delegate (MedkitRecord item)
+            //{
+            //    CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
+            //    ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ConsumableDescriptor>();
+            //    item.ContentDescriptor = itemContentDescriptor;
+            //    AddItemToGame(item);
+            //}));
+            Parsers.Add(new NullableRecordParser<ConsumableRecord>("consumables", delegate (ConsumableRecord item)
             {
                 CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
-                ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ItemContentDescriptor>();
-                item.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(item);
-            }));
-            Parsers.Add(new NullableRecordParser<FoodRecord>("consumables", delegate (FoodRecord item)
-            {
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
-                FoodDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<FoodDescriptor>();
-                itemContentDescriptor._useEatSound = ExtractCustomParameter<bool>(customItemDescriptor.customParameters, "UseEatSound");
+                ConsumableDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ConsumableDescriptor>();
+                itemContentDescriptor._useSound = ExtractCustomParameter<AudioClip>(customItemDescriptor.customParameters, "UseEatSound");
                 item.ContentDescriptor = itemContentDescriptor;
                 AddItemToGame(item);
             }));
@@ -217,41 +225,38 @@ namespace QM_WeaponImporter
                 item.ContentDescriptor = itemContentDescriptor;
                 AddItemToGame(item);
             }));
-            Parsers.Add(new NullableRecordParser<GrenadeTemplate>("grenades", delegate (GrenadeTemplate item)
-            {
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
-                GrenadeItemDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<GrenadeItemDescriptor>();
+            //Parsers.Add(new NullableRecordParser<GrenadeTemplate>("grenades", delegate (GrenadeTemplate item)
+            //{
+            //    CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
+            //    GrenadeItemDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<GrenadeItemDescriptor>();
 
-                Data.Descriptors.TryGetValue("grenades", out DescriptorsCollection ammoDescriptors);
-                GrenadeItemDescriptor baseGrenade = ammoDescriptors.GetDescriptor(customItemDescriptor.baseItemId) as GrenadeItemDescriptor;
+            //    Data.Descriptors.TryGetValue("grenades", out DescriptorsCollection ammoDescriptors);
+            //    GrenadeItemDescriptor baseGrenade = ammoDescriptors.GetDescriptor(customItemDescriptor.baseItemId) as GrenadeItemDescriptor;
 
-                if (baseGrenade == null) baseGrenade = ammoDescriptors.GetDescriptor("frag_grenade") as GrenadeItemDescriptor;
-                if (baseGrenade != null)
-                {
-                    itemContentDescriptor.entityFlySprites = baseGrenade.entityFlySprites;
-                    itemContentDescriptor.entityShadowSprites = baseGrenade.entityShadowSprites;
-                    itemContentDescriptor.ricochetSound = baseGrenade.ricochetSound;
-                    itemContentDescriptor.throwSound = baseGrenade.throwSound;
-                    itemContentDescriptor.fallSound = baseGrenade.fallSound;
-                    itemContentDescriptor.explosionSoundBank = baseGrenade.explosionSoundBank;
-                    itemContentDescriptor.visualExplosionOffset = baseGrenade.visualExplosionOffset;
-                    itemContentDescriptor.explosion = baseGrenade.explosion;
-                }
-                else
-                {
-                    Logger.WriteToLog($"Base grenade {customItemDescriptor.baseItemId} and \"frag grenade\" do not exist." +
-                        $"\nCustom grenades will not work properly!", Logger.LogType.Warning);
-                    return;
-                }
+            //    if (baseGrenade == null) baseGrenade = ammoDescriptors.GetDescriptor("frag_grenade") as GrenadeItemDescriptor;
+            //    if (baseGrenade != null)
+            //    {
+            //        itemContentDescriptor.entityFlySprites = baseGrenade.entityFlySprites;
+            //        itemContentDescriptor.entityShadowSprites = baseGrenade.entityShadowSprites;
+            //        itemContentDescriptor.ricochetSound = baseGrenade.ricochetSound;
+            //        itemContentDescriptor.throwSound = baseGrenade.throwSound;
+            //        itemContentDescriptor.fallSound = baseGrenade.fallSound;
+            //    }
+            //    else
+            //    {
+            //        Logger.LogWarning($"Base grenade {customItemDescriptor.baseItemId} and \"frag grenade\" do not exist." +
+            //            $"\nCustom grenades will not work properly!");
+            //        return;
+            //    }
 
-                itemContentDescriptor.ClearGibsRadiusInPixels = ExtractCustomParameter<int>(customItemDescriptor.customParameters, "ClearGibsRadiusInPixels");
-                itemContentDescriptor.ShakeCameraOnExplosion = ExtractCustomParameter<bool>(customItemDescriptor.customParameters, "ShakeCameraOnExplosion");
-                itemContentDescriptor.visualExplsoionDelay = ExtractCustomParameter<float>(customItemDescriptor.customParameters, "visualExplsoionDelay");
-                itemContentDescriptor.visualReachCellDuration = ExtractCustomParameter<float>(customItemDescriptor.customParameters, "visualReachCellDuration");
-                
-                item.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(item);
-            }));
+            //    itemContentDescriptor.ClearGibsRadiusInPixels = ExtractCustomParameter<int>(customItemDescriptor.customParameters, "ClearGibsRadiusInPixels");
+            //    itemContentDescriptor.ShakeCameraOnExplosion = ExtractCustomParameter<bool>(customItemDescriptor.customParameters, "ShakeCameraOnExplosion");
+            //    itemContentDescriptor.visualExplsoionDelay = ExtractCustomParameter<float>(customItemDescriptor.customParameters, "visualExplsoionDelay");
+            //    itemContentDescriptor.visualReachCellDuration = ExtractCustomParameter<float>(customItemDescriptor.customParameters, "visualReachCellDuration");
+
+            //    item.ContentDescriptor = itemContentDescriptor;
+            //    AddItemToGame(item);
+            //}));
             Parsers.Add(new NullableRecordParser<TrashRecord>("trash", delegate (TrashRecord item)
             {
                 CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
@@ -259,51 +264,72 @@ namespace QM_WeaponImporter
                 item.ContentDescriptor = itemContentDescriptor;
                 AddItemToGame(item);
             }));
+            Parsers.Add(new NullableRecordParser<CustomFireModeRecord>("firemodes", delegate (CustomFireModeRecord item)
+            {
+                FireModeRecord fireModeRecord = item;
+                FireModeDescriptor fireModeContentDescriptor = ScriptableObject.CreateInstance<FireModeDescriptor>();
+                fireModeContentDescriptor.Icon = Importer.LoadNewSprite(item.FireModeSpritePath);
+                fireModeRecord.ContentDescriptor = fireModeContentDescriptor;
+                AddFireModeToGame(item);
+            }));
+        }
+
+        public static bool ImportDefaultConfig()
+        {
+            return ImportConfig(Importer.AssemblyFolder);
+        }
+
+        public static bool ImportConfig(string configPath)
+        {
+            if (string.IsNullOrEmpty(configPath))
+            {
+                Logger.LogError($"Null config path at ImportConfig entry point.");
+                return false;
+            }
+            return ImportConfig(Importer.GetGlobalConfig(configPath), configPath);
         }
 
         // Create the global config in the assembly folder.
         // You only send the config over, then everything else is automatic.
-        public static bool ImportConfig(ConfigTemplate userConfig)
+        public static bool ImportConfig(ConfigTemplate userConfig, string rootPath)
         {
-            rootFolder = userConfig.rootFolder;
-            Logger.WriteToLog($"Starting import config from: {userConfig.rootFolder}");
+            rootFolder = rootPath;
+            // We should check the root first.
+            // See if atleast has the config file...
+            if (string.IsNullOrEmpty(rootFolder))
+            {
+                Logger.LogError($"Root Folder in global config file is empty.");
+                return false;
+            }
+
+            if (!Directory.Exists(rootFolder))
+            {
+                Logger.LogError($"Root Folder \"{rootFolder}\" does not exist.");
+                return false;
+            }
+
+            Logger.LogInfo($"Starting import config from: {rootPath}");
             Importer.imagePixelScaling = Mathf.Max(1f, userConfig.imagePixelScale);
             // This must include the Import.
             LoadDescriptors(userConfig);
             LoadDefaultParsers();
             try
             {
-                if (rootFolder == null || rootFolder.Equals(string.Empty))
-                {
-                    Logger.WriteToLog($"Root Folder in global config file is empty.", Logger.LogType.Error);
-                    return false;
-                }
-
-                if (!Directory.Exists(rootFolder))
-                {
-                    Logger.WriteToLog($"Root Folder \"{rootFolder}\" does not exist.", Logger.LogType.Error);
-                    return false;
-                }
-
-                Logger.WriteToLog($"Iterating through folders");
                 LoadLocalization(userConfig);
                 foreach (var path in userConfig.folderPaths)
                 {
                     if (!ParseFile(path)) continue;
                 }
-
-                Logger.WriteToLog($"Configuration success for {userConfig.rootFolder}");
                 return true;
             }
             catch (Exception e)
             {
-                Logger.WriteToLog($"Configuration failed for {userConfig.rootFolder}.\n{e.Message}\n{e.StackTrace}",
-                    Logger.LogType.Error);
+                Logger.LogError($"Configuration failed for {rootPath}.\n{e.Message}\n{e.StackTrace}");
                 return false;
             }
             finally
             {
-                Logger.Flush();
+                Logger.FlushAdditive();
             }
         }
 
@@ -313,25 +339,22 @@ namespace QM_WeaponImporter
             string folderPath = Path.Combine(rootFolder, relativeFolderPath.Value);
             if (!Directory.Exists(folderPath))
             {
-                Logger.WriteToLog($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.", Logger.LogType.Warning);
+                Logger.LogError($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
                 return false;
             }
-            Logger.WriteToLog($"Searching for {folderPath}");
             var foundParser = Parsers.Find(x => x.Identifier.ToLower().Equals(relativeFolderPath.Key.ToLower()));
             if (foundParser == null)
             {
-                Logger.WriteToLog($"No parser exists for [{relativeFolderPath.Key}]", Logger.LogType.Warning);
+                Logger.LogWarning($"No parser exists for [{relativeFolderPath.Key}]");
                 return false;
             }
-            Logger.WriteToLog($"Checking for {relativeFolderPath}");
             DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
             FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
             foreach (FileInfo singleFile in files)
             {
-                Logger.WriteToLog($"Iterating through {singleFile.Name}");
                 string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
                 foundParser.Parse(configItemContent);
-                Logger.WriteToLog($"Finished parsing {singleFile.Name} in {relativeFolderPath}");
+                Logger.LogInfo($"Finished parsing {singleFile.Name} in {relativeFolderPath}");
             }
             return true;
         }
@@ -346,7 +369,19 @@ namespace QM_WeaponImporter
             }
             else
             {
-                Logger.WriteToLog($"Item {item.Id} could not be loaded because descriptor is null.", Logger.LogType.Error);
+                Logger.LogError($"Item {item.Id} could not be loaded because descriptor is null.");
+            }
+        }
+
+        private static void AddFireModeToGame(FireModeRecord fireModeRecord)
+        {
+            if (fireModeRecord.ContentDescriptor != null)
+            {
+                MGSC.Data.Firemodes.AddRecord(fireModeRecord.Id, fireModeRecord);
+            }
+            else
+            {
+                Logger.LogError($"Item {fireModeRecord.Id} could not be loaded because descriptor is null.");
             }
         }
 
@@ -364,7 +399,7 @@ namespace QM_WeaponImporter
             var item = itemDescriptors.Find(x => x.attachedId.Equals(id));
             if (item == null)
             {
-                Logger.WriteToLog($"Descriptor for {id} not found. Returning a null");
+                Logger.LogError($"Descriptor for {id} not found. Returning a null");
                 return null;
             }
             return item;
