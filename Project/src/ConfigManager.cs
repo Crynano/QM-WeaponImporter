@@ -61,8 +61,9 @@ namespace QM_WeaponImporter
 
                             // for now with the mod being item focused, the template is only concerned with name and shortdesc
                             // this can be expanded later
-                            GameItemCreator.AddLocalization(filePath.Key, "name", json.name);
-                            GameItemCreator.AddLocalization(filePath.Key, "shortdesc", json.shortdesc);
+                            string key = filePath.Key.ToLower();
+                            GameItemCreator.AddLocalization(key, "name", json.name);
+                            GameItemCreator.AddLocalization(key, "shortdesc", json.shortdesc);
 
                             Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
                         }
@@ -130,7 +131,7 @@ namespace QM_WeaponImporter
                 MGSC.Data.WorkbenchReceipts.Add(itemWorkbenchReceiptRecord);
                 itemWorkbenchReceiptRecord.GenerateId();
             }));
-            Parsers.Add(new NullableRecordParser<DatadiskRecord>("datadisks", delegate (DatadiskRecord datadiskRecord)
+            Parsers.Add(new NullableRecordParser<DatadiskRecordTemplate>("datadisks", delegate (DatadiskRecordTemplate datadiskRecord)
             {
                 CompositeItemRecord itemRecord = (CompositeItemRecord)MGSC.Data.Items.GetRecord(datadiskRecord.Id);
                 if (itemRecord != null) // Append to existing chip if already exists
@@ -264,19 +265,27 @@ namespace QM_WeaponImporter
                 item.ContentDescriptor = itemContentDescriptor;
                 AddItemToGame(item);
             }));
-            Parsers.Add(new NullableRecordParser<CustomFireModeRecord>("firemodes", delegate (CustomFireModeRecord item)
+            Parsers.Add(new NullableRecordParser<FireModeRecordTemplate>("firemodes", delegate (FireModeRecordTemplate item)
             {
-                FireModeRecord fireModeRecord = item;
+                FireModeRecord fireModeRecord = item.GetOriginal();
                 FireModeDescriptor fireModeContentDescriptor = ScriptableObject.CreateInstance<FireModeDescriptor>();
+                Logger.LogInfo($"Adding firemode with ID: {item.id} and image at {item.FireModeSpritePath}");
                 fireModeContentDescriptor.Icon = Importer.LoadNewSprite(item.FireModeSpritePath);
                 fireModeRecord.ContentDescriptor = fireModeContentDescriptor;
-                AddFireModeToGame(item);
+                AddFireModeToGame(fireModeRecord);
             }));
         }
 
         public static bool ImportDefaultConfig()
         {
-            return ImportConfig(Importer.AssemblyFolder);
+            var selfConfig = Importer.GetGlobalConfig(Importer.AssemblyFolder);
+            rootFolder = Importer.AssemblyFolder;
+            if (selfConfig == null)
+            {
+                Logger.LogWarning($"Mod has no self-configuration, skipping loading.");
+                return false;
+            }
+            return ImportConfig(selfConfig, Importer.AssemblyFolder);
         }
 
         public static bool ImportConfig(string configPath)

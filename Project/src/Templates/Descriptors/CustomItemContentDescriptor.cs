@@ -16,6 +16,9 @@ public class CustomItemContentDescriptor
     public string dryShotSoundPath { get; set; } = string.Empty;
     public string failedAttackSoundPath { get; set; } = string.Empty;
     public string reloadSoundPath { get; set; } = string.Empty;
+    public string bundlePath { get; set; } = string.Empty;
+    public string prefabName { get; set; } = string.Empty;
+    public string textureName {  get; set; } = string.Empty;
 
     public Dictionary<string, string[]> customParameters = new Dictionary<string, string[]>()
     {

@@ -31,7 +31,7 @@ namespace QM_WeaponImporter.Services
                 [new MGSC.ItemQuantity() { Count = 1, ItemId = "Item ID" }]
             }, rootPath);
             CreateExampleFile(new MGSC.DatadiskRecord(), rootPath);
-            CreateExampleFile(CustomFireModeRecord.GetExample(), rootPath);
+            CreateExampleFile(FireModeRecordTemplate.GetExample(), rootPath);
         }
 
         private void CreateExampleFile<T>(T objectType, string root)

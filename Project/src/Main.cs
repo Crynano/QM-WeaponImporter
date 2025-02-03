@@ -8,7 +8,7 @@ namespace QM_WeaponImporter
         [Hook(ModHookType.AfterConfigsLoaded)]
         public static void Start(IModContext context)
         {
-            Logger.LogInfo("Starting ModConfigLoad from QM_WeaponImporter");
+            Logger.LogInfo("QM_WeaponImporter Start");
             try
             {
                 // This library (for testing) loads from the same folder too.
@@ -17,7 +17,7 @@ namespace QM_WeaponImporter
                     Logger.LogInfo("Test mod is loaded!");
                 }
                 // it only use is as API.
-                Logger.LogInfo($"QM_LiteItemImporter API Loaded!");
+                Logger.LogInfo($"QM_WeaponImporter API Loaded!");
             }
             catch (Exception e)
             {

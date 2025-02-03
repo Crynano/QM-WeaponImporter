@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using MGSC;
+using System.Collections.Generic;
 
 namespace QM_WeaponImporter.Templates;
 internal interface IWeaponDescriptorTemplate
 {
-    public string grip { get; set; }
+    public HandsGrip grip { get; set; }
     public float visualReachCellDuration { get; set; }
     public List<string> entityFlySprites { get; set; }
     public bool useCustomBullet { get; set; }

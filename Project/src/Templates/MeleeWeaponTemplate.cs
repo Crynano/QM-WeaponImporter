@@ -33,13 +33,13 @@ namespace QM_WeaponImporter
         {
             MeleeWeaponTemplate meleeWeapon = new MeleeWeaponTemplate()
             {
-                id = "army_knife",
+                id = "army_pistol_1",
                 price = 100,
                 weight = 0.7f,
                 inventoryWidthSize = 2,
-                weaponClass = "Knife",
-                weaponSubClass = "Default",
-                grip = "meleeonehanded",
+                weaponClass = MGSC.WeaponClass.Blade,
+                weaponSubClass = MGSC.WeaponSubClass.Default,
+                grip = MGSC.HandsGrip.MeleeOneHanded,
                 requiredAmmo = "",
                 overrideAmmo = "",
                 defaultAmmoId = "implicted_combat_knife",

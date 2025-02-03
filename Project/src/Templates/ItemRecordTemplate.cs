@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System;
+using MGSC;
 
 namespace QM_WeaponImporter.Templates;
 [Serializable]
@@ -10,5 +11,5 @@ public class ItemRecordTemplate : BasePickupItemRecordTemplate
     public float price { get; set; } = 0f;
     public float weight { get; set; } = 0f;
     public int inventoryWidthSize { get; set; } = 1;
-    public string itemClass { get; set; } = string.Empty;
+    public ItemClass itemClass { get; set; } = ItemClass.None;
 }

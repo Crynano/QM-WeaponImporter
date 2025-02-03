@@ -40,13 +40,30 @@ namespace QM_WeaponImporter
             {
                 Logger.LogInfo($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
                 // Return a white texture why not.
-                return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 2, 2), Vector3.zero);
+                return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 2, 2), Vector2.zero);
             }
             Logger.LogInfo($"Recovering image at: \"{path}\"\nFull path: \"{finalPath}\"");
             Texture2D SpriteTexture = LoadTexture(finalPath);
             // Maybe we can adjust the size of the sprite.
             Rect oldRect = new Rect(0, 0, SpriteTexture.width, SpriteTexture.height);
-            Sprite NewSprite = Sprite.Create(SpriteTexture, oldRect, new Vector2(0, 0), imagePixelScaling);
+            Sprite NewSprite = Sprite.Create(SpriteTexture, oldRect, Vector2.zero, imagePixelScaling);
+            return NewSprite;
+        }
+
+        public static Sprite LoadCenteredSprite(string path)
+        {
+            string finalPath = Path.Combine(ConfigManager.rootFolder, path);
+            if (!File.Exists(finalPath))
+            {
+                Logger.LogInfo($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
+                // Return a white texture why not.
+                return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 2, 2), new Vector2(1,1));
+            }
+            Logger.LogInfo($"Recovering image at: \"{path}\"\nFull path: \"{finalPath}\"");
+            Texture2D SpriteTexture = LoadTexture(finalPath);
+            // Maybe we can adjust the size of the sprite.
+            Rect oldRect = new Rect(0, 0, SpriteTexture.width, SpriteTexture.height);
+            Sprite NewSprite = Sprite.Create(SpriteTexture, oldRect, new Vector2(0.5f, 0f), 100f);
             return NewSprite;
         }
 
@@ -72,6 +89,29 @@ namespace QM_WeaponImporter
                 }
             }
             return null;
+        }
+
+        public static T? LoadFileFromBundle<T>(string bundlePath, string fileName) where T : class
+        {
+            var completePath = Path.Combine(ConfigManager.rootFolder, bundlePath);
+            if (!File.Exists(completePath)) { Logger.LogError($"Could not find relative bundle with {bundlePath} at {completePath}"); return null; }
+            // If file doesnt have the correct extension?
+            // if (!Path.HasExtension(completePath)) { Logger.LogError($"Incorrect path at {bundlePath}"); return null; }
+            Logger.LogInfo($"Loading from {bundlePath}");
+            // We assume its right
+            var loadedBundle = AssetBundle.LoadFromFile(completePath);
+            var loadedAsset = loadedBundle.LoadAsset(fileName, typeof(T)) as T;
+            loadedBundle.Unload(false);
+            if (loadedAsset != null)
+            {
+                Logger.LogInfo($"Loaded asset correctly! Returning {loadedAsset.GetType()}");
+                return loadedAsset;
+            }
+            else
+            {
+                Logger.LogError($"Error when obtaining asset {fileName} from bundle: {bundlePath}");
+                return null;
+            }
         }
 
         private static IAudioImporter<AudioClip> audioImporter = new Services.UnityFileAudioImporter();
@@ -106,9 +146,9 @@ namespace QM_WeaponImporter
                 Logger.LogError($"Sound at {finalPath} does not exist");
                 return null;
             }
-
+            Logger.LogInfo($"Loaded audio successfully from {relativePath}");
             return audioImporter.Import(finalPath);
-        }
+        }   
 
         public static void CreateGlobalConfig(string rootPath)
         {
@@ -138,11 +178,13 @@ namespace QM_WeaponImporter
 
         public static ConfigTemplate GetGlobalConfig(string path)
         {
-            Logger.LogInfo($"Loading global config at \"{path}\"");
             string fullPath = Path.Combine(path, GlobalConfigName);
+            Logger.LogInfo($"Loading global config at \"{path}\"");
             if (!File.Exists(fullPath))
             {
-                throw new NullReferenceException($"Path \"{fullPath}\" for GetGlobalConfig is null.");
+                //throw new NullReferenceException($"Path \"{fullPath}\" for GetGlobalConfig is null.");
+                Logger.LogError($"Config is null at {fullPath}");
+                return null;
             }
             var importedString = File.ReadAllText(fullPath);
 

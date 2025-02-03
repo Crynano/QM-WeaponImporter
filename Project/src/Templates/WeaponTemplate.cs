@@ -1,6 +1,7 @@
 ﻿using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
+using MGSC;
 
 namespace QM_WeaponImporter
 {
@@ -14,8 +15,9 @@ namespace QM_WeaponImporter
         /// Generic Properties
         /// </summary>
         public bool isImplicit { get; set; } = false;
-        public string weaponClass { get; set; } = string.Empty;
-        public string weaponSubClass { get; set; } = string.Empty;
+        public HandsGrip grip { get; set; } = HandsGrip.None;
+        public WeaponClass weaponClass { get; set; } = WeaponClass.None;
+        public WeaponSubClass weaponSubClass { get; set; } = WeaponSubClass.None;
         public string requiredAmmo { get; set; } = string.Empty;
         public string overrideAmmo { get; set; } = string.Empty;
         public string defaultAmmoId { get; set; } = string.Empty;
@@ -43,7 +45,7 @@ namespace QM_WeaponImporter
         /// <summary>
         /// WeaponDescriptorParameters
         /// </summary>
-        public string grip { get; set; } = string.Empty;
+       
         // This properties get moved to another descriptors
         public float visualReachCellDuration { get; set; } = 0f;
         public List<string> entityFlySprites { get; set; } = new List<string>();

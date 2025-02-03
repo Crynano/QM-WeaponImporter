@@ -36,11 +36,12 @@ namespace QM_WeaponImporter
             descriptorsPath = "Assets/Descriptors";
             localizationPaths = new Dictionary<string, string>()
             {
-                { "item", "Assets/Localization"}
+                { "item", "Assets/Localization/Items"},
+                { "Ui", "Assets/Localization/UI" },
+                { "Firemode", "Assets/Localization/Firemodes" }
             };
             folderPaths = new Dictionary<string, string>
             {
-                { "sounds", "Assets/Sounds" },
                 { "trash", "Assets/Config/trash" },
                 { "ammo", "Assets/Config/ammo" },
                 { "firemodes", "Assets/Config/firemodes" },

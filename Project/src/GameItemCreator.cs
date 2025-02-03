@@ -90,15 +90,15 @@ namespace QM_WeaponImporter
 
             // Icons
             myWeaponDescriptor._icon = Importer.LoadNewSprite(weaponDescriptor.iconSpritePath);
-            myWeaponDescriptor._smallIcon = Importer.LoadNewSprite(weaponDescriptor.smallIconSpritePath);
-            myWeaponDescriptor._shadow = Importer.LoadNewSprite(weaponDescriptor.shadowOnFloorSpritePath);
+            myWeaponDescriptor._smallIcon = Importer.LoadCenteredSprite(weaponDescriptor.smallIconSpritePath);
+            myWeaponDescriptor._shadow = Importer.LoadCenteredSprite(weaponDescriptor.shadowOnFloorSpritePath);
 
             // If grip is null then a bunch of problems will arise.
-            myWeaponDescriptor._grip = string.IsNullOrEmpty(userWeapon.grip) ? HandsGrip.BareHands : StringToEnum<HandsGrip>(userWeapon.grip);
+            myWeaponDescriptor._grip = userWeapon.grip;
 
-            // TODO Set prefab?
-            myWeaponDescriptor._prefab = new GameObject("Empty GO");
-            myWeaponDescriptor._texture = Texture2D.whiteTexture;
+            // Object prefab with muzzle
+            myWeaponDescriptor._prefab = Importer.LoadFileFromBundle<GameObject>(weaponDescriptor.bundlePath, weaponDescriptor.prefabName);
+            myWeaponDescriptor._texture = Importer.LoadFileFromBundle<Texture>(weaponDescriptor.bundlePath, weaponDescriptor.textureName);
 
             // HFG Overlay?
             myWeaponDescriptor._hasHFGOverlay = userWeapon.hasHFGOverlay;
@@ -125,7 +125,8 @@ namespace QM_WeaponImporter
             if (!muzzleApplied)
             {
                 Logger.LogInfo($"Muzzle wasn't herited, applying by default");
-                GameObject muzzleGo = new GameObject("Test Muzzle");
+                GameObject muzzleGo = new GameObject($"Weapon [{userWeapon.id}] Muzzle");
+                muzzleGo.transform.parent = myWeaponDescriptor._prefab.transform;
                 Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
                 muzzle._additLightIntencityMult = .5f;
                 muzzle._muzzleIntensityCurve = new AnimationCurve()
@@ -177,22 +178,10 @@ namespace QM_WeaponImporter
 
             try
             {
-                MGSC.Data.Descriptors.TryGetValue("meleeweapons", out DescriptorsCollection rngWps);
-                // This some sounds by default  
-                // This will also provide the weapon with initialized soundbanks.
-                // With a good configuration
-                var rangedWeaponDescriptor = (WeaponDescriptor)rngWps._descriptors[0];
-                if (rangedWeaponDescriptor != null)
-                {
-                    myWeaponDescriptor._attackSoundBanks = rangedWeaponDescriptor._attackSoundBanks;
-                    myWeaponDescriptor._dryShotSoundBanks = rangedWeaponDescriptor._dryShotSoundBanks;
-                    myWeaponDescriptor._failedAttackSoundBanks = rangedWeaponDescriptor._failedAttackSoundBanks;
-                    myWeaponDescriptor._reloadSoundBanks = rangedWeaponDescriptor._reloadSoundBanks;
-                }
-                SetSounds(ref myWeaponDescriptor._attackSoundBanks, weaponDescriptor.shootSoundPath, 0);
-                SetSounds(ref myWeaponDescriptor._dryShotSoundBanks, weaponDescriptor.dryShotSoundPath, 1);
-                SetSounds(ref myWeaponDescriptor._failedAttackSoundBanks, weaponDescriptor.failedAttackSoundPath, 2);
-                SetSounds(ref myWeaponDescriptor._reloadSoundBanks, weaponDescriptor.reloadSoundPath, 3);
+                SetSounds(ref myWeaponDescriptor._attackSoundBanks, weaponDescriptor.shootSoundPath, weaponDescriptor.baseItemId, 0);
+                SetSounds(ref myWeaponDescriptor._dryShotSoundBanks, weaponDescriptor.dryShotSoundPath, weaponDescriptor.baseItemId, 1);
+                SetSounds(ref myWeaponDescriptor._failedAttackSoundBanks, weaponDescriptor.failedAttackSoundPath, weaponDescriptor.baseItemId, 2);
+                SetSounds(ref myWeaponDescriptor._reloadSoundBanks, weaponDescriptor.reloadSoundPath, weaponDescriptor.baseItemId, 3);
             }
             catch (Exception e)
             {
@@ -214,9 +203,9 @@ namespace QM_WeaponImporter
             myWeapon.TechLevel = userWeapon.techLevel;
             myWeapon.Categories = userWeapon.categories;
             myWeapon.IsImplicit = userWeapon.isImplicit;
-            myWeapon.ItemClass = StringToEnum<ItemClass>(userWeapon.itemClass);
-            myWeapon.WeaponClass = StringToEnum<WeaponClass>(userWeapon.weaponClass);
-            myWeapon.WeaponSubClass = StringToEnum<WeaponSubClass>(userWeapon.weaponSubClass);
+            myWeapon.ItemClass = userWeapon.itemClass;
+            myWeapon.WeaponClass = userWeapon.weaponClass;
+            myWeapon.WeaponSubClass = userWeapon.weaponSubClass;
             myWeapon.DefaultAmmoId = userWeapon.defaultAmmoId;
             // Let's throw a warning to the user just in case.
             if (!MGSC.Data.Items._records.ContainsKey(userWeapon.defaultAmmoId))
@@ -276,9 +265,6 @@ namespace QM_WeaponImporter
             myWeapon.BonusScatterAngle = userWeapon.bonusScatterAngle;
             myWeapon.MinRandomAmmoCount = userWeapon.minRandomAmmoCount;
             myWeapon.SilencerShotChance = userWeapon.silencerShotChance;
-            myWeapon.ObstaclePierceChanceBonus = userWeapon.obstaclePierceChanceBonus;
-            myWeapon.CreaturePierceBonus = userWeapon.creaturePierceBonus;
-            myWeapon.WoundChanceOnPierce = userWeapon.woundChanceOnPierce;
             myWeapon.DefaultGrenadeId = userWeapon.defaultGrenadeId;
             myWeapon.AllowedGrenadeIds = userWeapon.AllowedGrenadeIds;
             myWeapon.RampUpValue = userWeapon.rampUpValue;
@@ -321,7 +307,7 @@ namespace QM_WeaponImporter
                     string entryStringId;
                     if (MGSC.Localization.Lang.TryParse(locals.Key, out enumKey))
                     {
-                        entryStringId = type + "." + itemEntry.Key + "." + group;
+                        entryStringId = $"{type}.{itemEntry.Key}.{group}";
                         if (!localizationDb[enumKey].ContainsKey(entryStringId))
                         {
                             localizationDb[enumKey].Add(entryStringId, locals.Value);
@@ -332,20 +318,22 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static void SetSounds(ref SoundBank[] soundBank, string soundPath, int category)
+        private static void SetSounds(ref SoundBank[] soundBank, string soundPath, string baseItemId, int category)
         {
             if (soundBank == null)
             {
-                return;
+                soundBank = new SoundBank[1];
+                soundBank[0] = new SoundBank();
+                soundBank[0]._clips = new AudioClip[1];
             }
 
             AudioClip audioClip = Importer.ImportAudio(soundPath);
             if (audioClip == null)
             {
-                soundBank = GetAudiosFromExistingWeapons(soundPath, category);
+                soundBank = GetAudiosFromExistingWeapons(baseItemId, category);
                 return;
             }
-            if (audioClip != null && soundBank.Length > 0)
+            else
             {
                 soundBank[0]._clips[0] = audioClip;
             }
@@ -353,23 +341,25 @@ namespace QM_WeaponImporter
 
         private static SoundBank[] GetAudiosFromExistingWeapons(string id, int category)
         {
+            WeaponDescriptor selectedWeaponDesc;
             if (Data.Items._records.ContainsKey(id))
             {
                 var referenceWeapon = MGSC.Data.Items.GetSimpleRecord<WeaponRecord>(id);
-                Debug.Log($"Sound reference weapon is {referenceWeapon.Id}");
-                switch (category)
-                {
-                    case 0: return ((WeaponDescriptor)referenceWeapon.ContentDescriptor)._attackSoundBanks;
-                    case 1: return ((WeaponDescriptor)referenceWeapon.ContentDescriptor)._dryShotSoundBanks;
-                    case 2: return ((WeaponDescriptor)referenceWeapon.ContentDescriptor)._failedAttackSoundBanks;
-                    case 3: return ((WeaponDescriptor)referenceWeapon.ContentDescriptor)._reloadSoundBanks;
-                    default: return new SoundBank[] { };
-                }
+                selectedWeaponDesc = referenceWeapon.ContentDescriptor as WeaponDescriptor;
+
             }
             else
             {
-                Logger.LogWarning($"Item with base ID not found: {id}");
-                return new SoundBank[] { };
+                Data.Descriptors.TryGetValue("rangeweapons", out DescriptorsCollection rngWps);
+                selectedWeaponDesc = rngWps._descriptors[0] as WeaponDescriptor;
+            }
+            switch (category)
+            {
+                case 0: return selectedWeaponDesc._attackSoundBanks;
+                case 1: return selectedWeaponDesc._dryShotSoundBanks;
+                case 2: return selectedWeaponDesc._failedAttackSoundBanks;
+                case 3: return selectedWeaponDesc._reloadSoundBanks;
+                default: return new SoundBank[] { };
             }
         }
 

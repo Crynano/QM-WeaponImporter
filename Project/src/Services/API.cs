@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace QM_WeaponImporter;
-public class API
+public static class API
 {
     // This class is what should be used from mods
     // So they can import whatever.
@@ -9,7 +9,7 @@ public class API
     // As a file path to the global config or as a class instance itself.
 
     // This should be the thing, but if a user wants to send over a class, go ahead.
-    public bool LoadModConfig(string rootPath)
+    public static bool LoadModConfig(string rootPath)
     {
         try
         {
@@ -28,7 +28,7 @@ public class API
         return false;
     }
 
-    public bool LoadModConfig(ConfigTemplate userConfig, string dataFolderRoot)
+    public static bool LoadModConfig(ConfigTemplate userConfig, string dataFolderRoot)
     {
         try
         {
