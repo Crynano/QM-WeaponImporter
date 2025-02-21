@@ -23,10 +23,10 @@ internal static class Logger
 
     public static void LogError(string message)
     {
-        WriteToLog(message, LogType.Error);
+        WriteToLog(message, LogType.Error, true);
     }
 
-    private static void WriteToLog(string message, LogType logType = LogType.Info, bool writeToUnity = true)
+    private static void WriteToLog(string message, LogType logType = LogType.Info, bool writeToUnity = false)
     {
         string beautifiedMessage = $"[{DateTime.Now.ToString()}][{LogSignature}][{logType.ToString().ToUpper()}] {message}";
 

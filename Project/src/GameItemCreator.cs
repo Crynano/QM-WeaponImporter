@@ -241,6 +241,7 @@ namespace QM_WeaponImporter
             myWeapon.CritPainDamageMult = userWeapon.critPainDamageMultiplier;
             myWeapon.OffSlotCritChance = userWeapon.offSlotCritChance;
             myWeapon.FovLookAngleMult = userWeapon.fovLookAngleMult;
+            myWeapon.DoAmputationOnWound = userWeapon.amputationOnWound;
         }
 
         private static void ConfigureMeleeWeapon(ref WeaponRecord myWeapon, MeleeWeaponTemplate userWeapon)
@@ -253,7 +254,6 @@ namespace QM_WeaponImporter
             myWeapon.CanThrow = userWeapon.canThrow;
             myWeapon.ThrowAutoHit = userWeapon.throwGuaranteedHit;
             myWeapon.ThrowPierce = userWeapon.doesThrowPierce;
-            myWeapon.DoAmputationOnWound = userWeapon.amputationOnWound;
         }
 
         private static void ConfigureRangedWeapon(ref WeaponRecord myWeapon, RangedWeaponTemplate userWeapon)

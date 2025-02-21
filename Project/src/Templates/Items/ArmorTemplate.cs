@@ -24,14 +24,19 @@ public class ArmorTemplate : ArmorRecord
         UpdateResists();
         ArmorRecord original = new ArmorRecord()
         {
-            InventoryWidthSize = this.InventoryWidthSize,
+            ArmorClass = this.ArmorClass,
+            ArmorSubClass = this.ArmorSubClass,
             ResistSheet = this.ResistSheet,
             MaxDurability = this.MaxDurability,
             MinDurabilityAfterRepair = this.MinDurabilityAfterRepair,
             Unbreakable = this.Unbreakable,
             RepairCategory = this.RepairCategory,
+            Categories = this.Categories,
+            TechLevel = this.TechLevel,
             Price = this.Price,
             Weight = this.Weight,
+            InventoryWidthSize = this.InventoryWidthSize,
+            ItemClass = this.ItemClass,
             Id = this.Id,
         };
         return original;

@@ -41,11 +41,12 @@ namespace QM_WeaponImporter
         public float minDmgCapBonus { get; set; } = 0f;
         public int rampUpValue { get; set; } = 0;
         public float fovLookAngleMult { get; set; } = 0f;
+        public bool amputationOnWound { get; set; }
 
         /// <summary>
         /// WeaponDescriptorParameters
         /// </summary>
-       
+
         // This properties get moved to another descriptors
         public float visualReachCellDuration { get; set; } = 0f;
         public List<string> entityFlySprites { get; set; } = new List<string>();

@@ -23,7 +23,7 @@ namespace QM_WeaponImporter
         /// Other melee properties
         /// </summary>
         public bool canMeleeAmputate { get; set; }
-        public bool amputationOnWound { get; set; }
+        
         public MeleeWeaponTemplate()
         {
             isMelee = true;
