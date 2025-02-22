@@ -5,11 +5,29 @@ using UnityEngine;
 namespace QM_WeaponImporter;
 internal static class Logger
 {
-    private static string LogFileName => "Log.txt";
-    private static string LogSignature = "QM_WeaponImporter";
-    private static string Log = $"[{DateTime.Now.ToString()}][{LogSignature}] ----------- Log Start -----------\n";
+    private enum LogType
+    {
+        Info,
+        Warning,
+        Error
+    }
 
-    private static string GetPath => Path.Combine(ConfigManager.rootFolder, LogFileName);
+    private static string LogFileName => $"Log_{DateTime.Now.ToString(@"dd_MM_yyyy")}.log";
+    private static string LogSignature { get; set; } = "QM_WeaponImporter";
+
+    private static string LogStart => $"[{DateTime.Now.ToString()}][{LogSignature}][START] ----------- Log Start -----------\n";
+    private static string LogEnd => $"[{DateTime.Now.ToString()}][{LogSignature}][END] ----------- Log End -----------\n";
+
+    private static string Context = "";
+    private static string Log = "";
+
+    private static string LogPath = Path.Combine(ConfigDirectories.AllModsConfigFolder, LogFileName);
+
+    public static void SetConfig(string modName)
+    {
+        LogSignature = modName;
+        LogPath = Path.Combine(ConfigDirectories.AllModsConfigFolder, modName, LogFileName);
+    }
 
     public static void LogInfo(string message)
     {
@@ -26,38 +44,50 @@ internal static class Logger
         WriteToLog(message, LogType.Error, true);
     }
 
-    private static void WriteToLog(string message, LogType logType = LogType.Info, bool writeToUnity = false)
+    public static void SetContext(string context)
     {
-        string beautifiedMessage = $"[{DateTime.Now.ToString()}][{LogSignature}][{logType.ToString().ToUpper()}] {message}";
+        Context = context;
+    }
+
+    public static void ClearContext()
+    {
+        Context = "";
+    }
+
+    private static void WriteToLog(string message, LogType logType, bool writeToUnity = false)
+    {
+        string beautifiedMessage =
+            $"[{DateTime.Now.ToString()}][{LogSignature}][{logType.ToString().ToUpper()}]" +
+            (string.IsNullOrEmpty(Context) ? "" : $"[{Context}]") +
+            $": {message}";
 
         // We can duplicate logs for Bepinex or custom console users.
         if (writeToUnity) Debug.Log(beautifiedMessage);
-        Log += beautifiedMessage + "\n";
+        Log += $"{beautifiedMessage}\n";
     }
 
     public static void Flush()
     {
-        WriteToLog($"[{DateTime.Now.ToString()}][{LogSignature}] ----------- Log End -----------");
-        File.WriteAllText(GetPath, Log);
-        Log = string.Empty;
+        string finalLog = LogStart + Log + LogEnd;
+        File.WriteAllText(LogPath, finalLog);
+        ResetLog();
     }
 
     public static void FlushAdditive()
     {
         string existingLog = "";
-        if (File.Exists(GetPath))
+        if (File.Exists(LogPath))
         {
-            existingLog = File.ReadAllText(GetPath);
+            existingLog = File.ReadAllText(LogPath);
         }
-        existingLog += Log;
-        File.WriteAllText(GetPath, existingLog);
-        Log = string.Empty;
+        string finalLog = LogStart + Log + LogEnd;
+        existingLog += finalLog;
+        File.WriteAllText(LogPath, existingLog);
+        ResetLog();
     }
 
-    private enum LogType
+    private static void ResetLog()
     {
-        Info,
-        Warning,
-        Error
+        Log = "";
     }
 }

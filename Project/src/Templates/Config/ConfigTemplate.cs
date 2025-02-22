@@ -31,38 +31,46 @@ namespace QM_WeaponImporter
 
         public ConfigTemplate()
         {
+
+        }
+
+        public static ConfigTemplate GetDefault()
+        {
             //rootFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location).Replace("\\", "/");
-            imagePixelScale = 200f;
-            descriptorsPath = "Assets/Descriptors";
-            localizationPaths = new Dictionary<string, string>()
+            return new ConfigTemplate()
             {
-                { "item", "Assets/Localization/Items"},
-                { "Ui", "Assets/Localization/UI" },
-                { "Firemode", "Assets/Localization/Firemodes" }
-            };
-            folderPaths = new Dictionary<string, string>
-            {
-                { "trash", "Assets/Config/trash" },
-                { "ammo", "Assets/Config/ammo" },
-                { "firemodes", "Assets/Config/firemodes" },
-                { "meleeweapons", "Assets/Config/meleeweapons" },
-                { "rangedweapons", "Assets/Config/rangedweapons" },
-                { "backpacks", "Assets/Config/backpacks" },
-                { "vests", "Assets/Config/vests" },
-                { "helmets", "Assets/Config/helmets" },
-                { "armors", "Assets/Config/armors" },
-                { "leggings", "Assets/Config/leggings" },
-                { "boots", "Assets/Config/boots" },
-                { "repairs", "Assets/Config/repairs" },
-                { "grenades", "Assets/Config/grenades" },
-                { "mines", "Assets/Config/mines" },
-                { "medkits", "Assets/Config/medkits" },
-                { "consumables", "Assets/Config/consumables" },
-                { "itemtransforms", "Assets/Config/itemtransforms" },
-                { "itemreceipts", "Assets/Config/itemreceipts" },
-                { "workbenchreceipts", "Assets/Config/workbenchreceipts" },
-                { "datadisks", "Assets/Config/datadisks" },
-                { "factionconfig", "Assets/Config/factionconfig" },
+                imagePixelScale = 200f,
+                descriptorsPath = "Assets/Descriptors",
+                localizationPaths = new Dictionary<string, string>()
+                {
+                    { "item", "Assets/Localization/Items"},
+                    { "Ui", "Assets/Localization/UI" },
+                    { "Firemode", "Assets/Localization/Firemodes" }
+                },
+                folderPaths = new Dictionary<string, string>
+                {
+                    { "trash", "Assets/Config/trash" },
+                    { "ammo", "Assets/Config/ammo" },
+                    { "firemodes", "Assets/Config/firemodes" },
+                    { "meleeweapons", "Assets/Config/meleeweapons" },
+                    { "rangedweapons", "Assets/Config/rangedweapons" },
+                    { "backpacks", "Assets/Config/backpacks" },
+                    { "vests", "Assets/Config/vests" },
+                    { "helmets", "Assets/Config/helmets" },
+                    { "armors", "Assets/Config/armors" },
+                    { "leggings", "Assets/Config/leggings" },
+                    { "boots", "Assets/Config/boots" },
+                    { "repairs", "Assets/Config/repairs" },
+                    { "grenades", "Assets/Config/grenades" },
+                    { "mines", "Assets/Config/mines" },
+                    { "medkits", "Assets/Config/medkits" },
+                    { "consumables", "Assets/Config/consumables" },
+                    { "itemtransforms", "Assets/Config/itemtransforms" },
+                    { "itemreceipts", "Assets/Config/itemreceipts" },
+                    { "workbenchreceipts", "Assets/Config/workbenchreceipts" },
+                    { "datadisks", "Assets/Config/datadisks" },
+                    { "factionconfig", "Assets/Config/factionconfig" },
+                }
             };
         }
 

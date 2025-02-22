@@ -26,7 +26,7 @@ namespace QM_WeaponImporter
 
         private static void LoadDescriptors(ConfigTemplate userConfig)
         {
-            Logger.LogInfo($"Loading descriptors");
+            //Logger.LogInfo($"Loading descriptors");
             Parsers.Add(new TemplateParser<CustomItemContentDescriptor>("descriptorsPath", itemDescriptors.Add));
             KeyValuePair<string, string> descriptorsEntry = new KeyValuePair<string, string>("descriptorsPath", userConfig.descriptorsPath);
             if (!ParseFile(descriptorsEntry))
@@ -49,7 +49,7 @@ namespace QM_WeaponImporter
                         string folderPath = Path.Combine(rootFolder, filePath.Value);
                         if (!Directory.Exists(folderPath))
                         {
-                            Logger.LogError($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
+                            Logger.LogWarning($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
                             return false;
                         }
                         DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
@@ -65,7 +65,7 @@ namespace QM_WeaponImporter
                             GameItemCreator.AddLocalization(key, "name", json.name);
                             GameItemCreator.AddLocalization(key, "shortdesc", json.shortdesc);
 
-                            Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
+                            //Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
                         }
                     }
                     catch (Exception e)
@@ -78,7 +78,7 @@ namespace QM_WeaponImporter
             }
             else
             {
-                Logger.LogInfo($"No Localization file path set.");
+                //Logger.LogInfo($"No Localization file path set.");
                 return false;
             }
         }
@@ -120,11 +120,13 @@ namespace QM_WeaponImporter
             }));
             Parsers.Add(new ImportParser<ItemTransformationRecord>("itemtransforms", delegate (ItemTransformationRecord itemTransformRecord)
             {
-                MGSC.Data.ItemTransformation.AddRecord(itemTransformRecord.Id, itemTransformRecord);
+                AddItemTransform(itemTransformRecord);
+                //MGSC.Data.ItemTransformation.AddRecord(itemTransformRecord.Id, itemTransformRecord);
             }));
             Parsers.Add(new ImportParser<ItemProduceReceipt>("itemreceipts", delegate (ItemProduceReceipt itemProduceReceiptRecord)
             {
-                MGSC.Data.ProduceReceipts.Add(itemProduceReceiptRecord);
+                AddProduceReceipt(itemProduceReceiptRecord);
+                //MGSC.Data.ProduceReceipts.Add(itemProduceReceiptRecord);
             }));
             Parsers.Add(new ImportParser<WorkbenchReceiptRecord>("workbenchreceipts", delegate (WorkbenchReceiptRecord itemWorkbenchReceiptRecord)
             {
@@ -141,7 +143,7 @@ namespace QM_WeaponImporter
                 }
                 else // Create new chip if doesn't exist
                 {
-                    Logger.LogInfo($"Creating new datachips not implemented. Chip id {datadiskRecord.Id}");
+                    Logger.LogWarning($"Creating new datachips not implemented. Chip id {datadiskRecord.Id}");
                     // TODO -- new chips have a descriptor attached, not sure how to do this yet
                     //MGSC.Data.Items.AddRecord(datadiskRecord.Id, datadiskRecord);
                     //datadiskRecord.ContentDescriptor = descs.GetDescriptor(datadiskRecord.Id);
@@ -269,23 +271,11 @@ namespace QM_WeaponImporter
             {
                 FireModeRecord fireModeRecord = item.GetOriginal();
                 FireModeDescriptor fireModeContentDescriptor = ScriptableObject.CreateInstance<FireModeDescriptor>();
-                Logger.LogInfo($"Adding firemode with ID: {item.id} and image at {item.FireModeSpritePath}");
+                //Logger.LogInfo($"Adding firemode with ID: {item.id} and image at {item.FireModeSpritePath}");
                 fireModeContentDescriptor.Icon = Importer.LoadNewSprite(item.FireModeSpritePath);
                 fireModeRecord.ContentDescriptor = fireModeContentDescriptor;
                 AddFireModeToGame(fireModeRecord);
             }));
-        }
-
-        public static bool ImportDefaultConfig()
-        {
-            var selfConfig = Importer.GetGlobalConfig(Importer.AssemblyFolder);
-            rootFolder = Importer.AssemblyFolder;
-            if (selfConfig == null)
-            {
-                Logger.LogWarning($"Mod has no self-configuration, skipping loading.");
-                return false;
-            }
-            return ImportConfig(selfConfig, Importer.AssemblyFolder);
         }
 
         public static bool ImportConfig(string configPath)
@@ -318,7 +308,7 @@ namespace QM_WeaponImporter
             }
 
             Logger.LogInfo($"Starting import config from: {rootPath}");
-            Importer.imagePixelScaling = Mathf.Max(1f, userConfig.imagePixelScale);
+            Importer.ImagePixelScaling = Mathf.Max(1f, userConfig.imagePixelScale);
             // This must include the Import.
             LoadDescriptors(userConfig);
             LoadDefaultParsers();
@@ -336,10 +326,10 @@ namespace QM_WeaponImporter
                 Logger.LogError($"Configuration failed for {rootPath}.\n{e.Message}\n{e.StackTrace}");
                 return false;
             }
-            finally
-            {
-                Logger.FlushAdditive();
-            }
+            //finally
+            //{
+            //    Logger.FlushAdditive();
+            //}
         }
 
 
@@ -348,7 +338,7 @@ namespace QM_WeaponImporter
             string folderPath = Path.Combine(rootFolder, relativeFolderPath.Value);
             if (!Directory.Exists(folderPath))
             {
-                Logger.LogError($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
+                Logger.LogWarning($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
                 return false;
             }
             var foundParser = Parsers.Find(x => x.Identifier.ToLower().Equals(relativeFolderPath.Key.ToLower()));
@@ -357,13 +347,15 @@ namespace QM_WeaponImporter
                 Logger.LogWarning($"No parser exists for [{relativeFolderPath.Key}]");
                 return false;
             }
-            DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
-            FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
+            DirectoryInfo directoryInfo = new DirectoryInfo(folderPath);
+            FileInfo[] files = directoryInfo.GetFiles("*.json");
             foreach (FileInfo singleFile in files)
             {
+                Logger.SetContext(singleFile.Name);
                 string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
                 foundParser.Parse(configItemContent);
                 Logger.LogInfo($"Finished parsing {singleFile.Name} in {relativeFolderPath}");
+                Logger.ClearContext();
             }
             return true;
         }
@@ -374,12 +366,59 @@ namespace QM_WeaponImporter
         {
             if (item.ContentDescriptor != null)
             {
+                try
+                {
+                    if (MGSC.Data.Items.GetSimpleRecord<BasePickupItemRecord>(item.Id) != null)
+                    {
+                        // If a weapon with that ID, by any case, is already registered. OVERRIDE IT.
+                        // In the end this will ensure correctness of mods over other ones.
+                        // Also creators must ensure IDs are unique.
+                        MGSC.Data.Items.RemoveRecord(item.Id);
+                        Logger.LogWarning($"An item with ID: [{item.Id}] was OVERRIDEN!!!");
+                    }
+                }
+                catch (Exception ex) { }
                 MGSC.Data.Items.AddRecord(item.Id, item);
             }
             else
             {
                 Logger.LogError($"Item {item.Id} could not be loaded because descriptor is null.");
             }
+        }
+
+        private static void AddItemTransform(ItemTransformationRecord item)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(MGSC.Data.ItemTransformation.GetRecord(item.Id).Id))
+                {
+                    // If a weapon with that ID, by any case, is already registered. OVERRIDE IT.
+                    // In the end this will ensure correctness of mods over other ones.
+                    // Also creators must ensure IDs are unique.
+                    MGSC.Data.ItemTransformation.RemoveRecord(item.Id);
+                    Logger.LogWarning($"An ItemTransformation with ID: [{item.Id}] was OVERRIDEN!!!");
+                }
+            }
+            catch (Exception ex) { }
+            MGSC.Data.ItemTransformation.AddRecord(item.Id, item);
+        }
+
+        private static void AddProduceReceipt(ItemProduceReceipt item)
+        {
+            try
+            {
+                var existingReceipt = MGSC.Data.ProduceReceipts.Find(x => x.Equals(item.Id));
+                if (existingReceipt != null)
+                {
+                    // If a weapon with that ID, by any case, is already registered. OVERRIDE IT.
+                    // In the end this will ensure correctness of mods over other ones.
+                    // Also creators must ensure IDs are unique.
+                    MGSC.Data.ProduceReceipts.Remove(existingReceipt);
+                    Logger.LogWarning($"A ProduceReceipt with ID: [{item.Id}] was OVERRIDEN!!!");
+                }
+            }
+            catch (Exception ex) { }
+            MGSC.Data.ProduceReceipts.Add(item);
         }
 
         private static void AddFireModeToGame(FireModeRecord fireModeRecord)

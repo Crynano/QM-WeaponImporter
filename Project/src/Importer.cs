@@ -15,8 +15,10 @@ namespace QM_WeaponImporter
         // https://forum.unity.com/threads/generating-sprites-dynamically-from-png-or-jpeg-files-in-c.343735/
         // Modded to use ImageConversion on Texture creation.
 
+        internal const string GlobalConfigName = "global_config.json";
+
         internal static float _imagePixelScaling = 200f;
-        public static float imagePixelScaling
+        public static float ImagePixelScaling
         {
             get { return _imagePixelScaling; }
             set
@@ -29,25 +31,18 @@ namespace QM_WeaponImporter
             }
         }
 
-        internal const string GlobalConfigName = "global_config.json";
+        private static SpriteImporter SpriteImporter = new SpriteImporter();
 
-        internal static string AssemblyFolder => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        internal static string DefaultConfigPath => Path.Combine(AssemblyFolder, GlobalConfigName);
         public static Sprite LoadNewSprite(string path)
         {
             string finalPath = Path.Combine(ConfigManager.rootFolder, path);
             if (!File.Exists(finalPath))
             {
-                Logger.LogInfo($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
+                Logger.LogError($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
                 // Return a white texture why not.
                 return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 2, 2), Vector2.zero);
             }
-            Logger.LogInfo($"Recovering image at: \"{path}\"\nFull path: \"{finalPath}\"");
-            Texture2D SpriteTexture = LoadTexture(finalPath);
-            // Maybe we can adjust the size of the sprite.
-            Rect oldRect = new Rect(0, 0, SpriteTexture.width, SpriteTexture.height);
-            Sprite NewSprite = Sprite.Create(SpriteTexture, oldRect, Vector2.zero, imagePixelScaling);
-            return NewSprite;
+            return SpriteImporter.Import(finalPath, Vector2.zero, ImagePixelScaling);
         }
 
         public static Sprite LoadCenteredSprite(string path)
@@ -55,56 +50,39 @@ namespace QM_WeaponImporter
             string finalPath = Path.Combine(ConfigManager.rootFolder, path);
             if (!File.Exists(finalPath))
             {
-                Logger.LogInfo($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
+                Logger.LogError($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
                 // Return a white texture why not.
                 return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 2, 2), new Vector2(1,1));
             }
-            Logger.LogInfo($"Recovering image at: \"{path}\"\nFull path: \"{finalPath}\"");
-            Texture2D SpriteTexture = LoadTexture(finalPath);
-            // Maybe we can adjust the size of the sprite.
-            Rect oldRect = new Rect(0, 0, SpriteTexture.width, SpriteTexture.height);
-            Sprite NewSprite = Sprite.Create(SpriteTexture, oldRect, new Vector2(0.5f, 0f), 100f);
-            return NewSprite;
-        }
-
-        public static Texture2D LoadTexture(string FilePath)
-        {
-            Texture2D Tex2D;
-            byte[] FileData;
-
-            if (File.Exists(FilePath))
-            {
-                try
-                {
-                    FileData = File.ReadAllBytes(FilePath);
-                    // Linear must be set to true.
-                    Tex2D = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
-                    Tex2D.filterMode = FilterMode.Point;
-                    ImageConversion.LoadImage(Tex2D, FileData);
-                    return Tex2D;
-                }
-                catch (Exception e)
-                {
-                    Logger.LogError($"Could not load image from {FilePath}. Error: {e.Message}");
-                }
-            }
-            return null;
+            return SpriteImporter.Import(finalPath, new Vector2(0.5f, 0f), 100f);
         }
 
         public static T? LoadFileFromBundle<T>(string bundlePath, string fileName) where T : class
         {
+            if(string.IsNullOrEmpty(fileName))
+            {
+                Logger.LogWarning($"Bundle fileName was empty or null");
+                return null;
+            }
+
             var completePath = Path.Combine(ConfigManager.rootFolder, bundlePath);
-            if (!File.Exists(completePath)) { Logger.LogError($"Could not find relative bundle with {bundlePath} at {completePath}"); return null; }
+
+            if (!File.Exists(completePath)) 
+            { 
+                Logger.LogError($"Could not find relative bundle with {bundlePath} at {completePath}"); 
+                return null; 
+            }
+
             // If file doesnt have the correct extension?
             // if (!Path.HasExtension(completePath)) { Logger.LogError($"Incorrect path at {bundlePath}"); return null; }
-            Logger.LogInfo($"Loading from {bundlePath}");
+            //Logger.LogInfo($"Loading from {bundlePath}");
             // We assume its right
             var loadedBundle = AssetBundle.LoadFromFile(completePath);
             var loadedAsset = loadedBundle.LoadAsset(fileName, typeof(T)) as T;
             loadedBundle.Unload(false);
             if (loadedAsset != null)
             {
-                Logger.LogInfo($"Loaded asset correctly! Returning {loadedAsset.GetType()}");
+                //Logger.LogInfo($"Loaded asset correctly! Returning {loadedAsset.GetType()}");
                 return loadedAsset;
             }
             else
@@ -136,7 +114,7 @@ namespace QM_WeaponImporter
             // Give a path, then import. If file does not exist then not
             if (string.IsNullOrEmpty(relativePath))
             {
-                Logger.LogError($"Relative path when importing audio was null!");
+                Logger.LogWarning($"Path was null when importing an audio file");
                 return null;
             }
             string finalPath = Path.Combine(ConfigManager.rootFolder, relativePath);
@@ -146,7 +124,7 @@ namespace QM_WeaponImporter
                 Logger.LogError($"Sound at {finalPath} does not exist");
                 return null;
             }
-            Logger.LogInfo($"Loaded audio successfully from {relativePath}");
+            //Logger.LogInfo($"Loaded audio successfully from {relativePath}");
             return audioImporter.Import(finalPath);
         }   
 
@@ -179,7 +157,7 @@ namespace QM_WeaponImporter
         public static ConfigTemplate GetGlobalConfig(string path)
         {
             string fullPath = Path.Combine(path, GlobalConfigName);
-            Logger.LogInfo($"Loading global config at \"{path}\"");
+            //Logger.LogInfo($"Loading global config at \"{path}\"");
             if (!File.Exists(fullPath))
             {
                 //throw new NullReferenceException($"Path \"{fullPath}\" for GetGlobalConfig is null.");

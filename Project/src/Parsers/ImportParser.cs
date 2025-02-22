@@ -26,7 +26,7 @@ internal class ImportParser<T> : IConfigParser where T : class, new()
         jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
         jsonSettings.ContractResolver = resolver;
 
-        Logger.LogInfo($"Parsing {typeof(T).ToString()}");
+        //Logger.LogInfo($"Parsing {typeof(T).ToString()}");
         T instance = JsonConvert.DeserializeObject<T>(data, jsonSettings);
         OnParsed?.Invoke(instance);
     }

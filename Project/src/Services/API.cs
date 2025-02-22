@@ -8,13 +8,12 @@ public static class API
     // They should only provide the global config.
     // As a file path to the global config or as a class instance itself.
 
-    // This should be the thing, but if a user wants to send over a class, go ahead.
-    public static bool LoadModConfig(string rootPath)
+    public static bool LoadModConfig(string modName, string rootPath)
     {
+        Setup(modName);
         try
         {
             var result = ConfigManager.ImportConfig(rootPath);
-            Logger.FlushAdditive();
             return result;
         }
         catch (Exception e)
@@ -28,8 +27,9 @@ public static class API
         return false;
     }
 
-    public static bool LoadModConfig(ConfigTemplate userConfig, string dataFolderRoot)
+    public static bool LoadModConfig(string modName, ConfigTemplate userConfig, string dataFolderRoot)
     {
+        Setup(modName);
         try
         {
             if (userConfig == null)
@@ -39,7 +39,6 @@ public static class API
             else
             {
                 var result = ConfigManager.ImportConfig(userConfig, dataFolderRoot);
-                Logger.FlushAdditive();
                 return result;
             }
         }
@@ -52,5 +51,11 @@ public static class API
             Logger.FlushAdditive();
         }
         return false;
+    }
+
+    private static void Setup(string modName)
+    {
+        ConfigDirectories.CreateLogFolders(modName);
+        Logger.SetConfig(modName);
     }
 }

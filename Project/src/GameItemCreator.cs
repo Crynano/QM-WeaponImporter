@@ -12,7 +12,7 @@ namespace QM_WeaponImporter
         {
             try
             {
-                Logger.LogInfo($"Creating weapon with ID: {userWeapon.id}");
+                //Logger.LogInfo($"Creating weapon with ID: {userWeapon.id}");
                 WeaponRecord myWeapon = new WeaponRecord();
                 if (userWeapon.GetType() == typeof(MeleeWeaponTemplate))
                 {
@@ -27,14 +27,25 @@ namespace QM_WeaponImporter
                 SetCommonProperties(ref myWeapon, userWeapon);
                 SetDescriptorProperties(ref myWeapon, userWeapon, weaponDescriptor);
                 //myWeapon.DefineClassTraits();
+                try
+                {
+                    if (MGSC.Data.Items.GetSimpleRecord<BasePickupItemRecord>(myWeapon.Id) != null)
+                    {
+                        // If a weapon with that ID, by any case, is already registered. OVERRIDE IT.
+                        // In the end this will ensure correctness of mods over other ones.
+                        // Also creators must ensure IDs are unique.
+                        MGSC.Data.Items.RemoveRecord(myWeapon.Id);
+                        Logger.LogWarning($"An item with ID: [{myWeapon.Id}] was OVERRIDEN!!!");
+                    }
+                }
+                catch (Exception ex) { }
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
-                Logger.LogInfo($"Weapon [{myWeapon.Id}] LOADED");
+                Logger.LogInfo($"Weapon [{myWeapon.Id}] loaded successfully.");
                 return true;
             }
             catch (Exception e)
             {
                 Logger.LogWarning($"Weapon [{userWeapon.id}] couldn't be added.\n{e.Message}\n{e.StackTrace}");
-                Logger.FlushAdditive();
                 return false;
             }
         }
@@ -283,11 +294,10 @@ namespace QM_WeaponImporter
             var selectedTable = factionTemplate.FactionRewardList;
             foreach (var factionRewardTable in selectedTable)
             {
-                Logger.LogInfo($"Adding rewards to {factionRewardTable.TableName} with {factionRewardTable.contentRecords.Count} items!");
                 foreach (var rewardEntry in factionRewardTable.contentRecords)
                 {
-                    // Devs really pulled an easy on us huh.
-                    Logger.LogInfo($"Adding {factionRewardTable.TableName}");
+                    string ids = string.Concat(rewardEntry.ContentIds);
+                    Logger.LogInfo($"Adding [{ids}] to {factionRewardTable.FactionName} faction table.");
                     Data.FactionDrop.AddRecord(factionRewardTable.TableName, rewardEntry);
                 }
             }
@@ -323,7 +333,7 @@ namespace QM_WeaponImporter
             if (soundBank == null)
             {
                 soundBank = new SoundBank[1];
-                soundBank[0] = new SoundBank();
+                soundBank[0] = ScriptableObject.CreateInstance(typeof(SoundBank)) as SoundBank; //new SoundBank();
                 soundBank[0]._clips = new AudioClip[1];
             }
 

@@ -16,7 +16,7 @@ internal class TemplateParser<T> : IConfigParser where T : class, new()
 
     public void Parse(string data)
     {
-        Logger.LogInfo($"Parsing {typeof(T).ToString()}");
+        //Logger.LogInfo($"Parsing {typeof(T).ToString()}");
         T instance = JsonConvert.DeserializeObject<T>(data);
         OnParsed?.Invoke(instance);
     }
