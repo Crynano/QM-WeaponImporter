@@ -29,11 +29,12 @@ namespace QM_WeaponImporter
             isMelee = true;
             range = 1;
         }
+
         public static MeleeWeaponTemplate GetExample()
         {
             MeleeWeaponTemplate meleeWeapon = new MeleeWeaponTemplate()
             {
-                id = "army_pistol_1",
+                id = "melee_weapon",
                 price = 100,
                 weight = 0.7f,
                 inventoryWidthSize = 2,

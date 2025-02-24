@@ -4,12 +4,12 @@ using MGSC;
 
 namespace QM_WeaponImporter.Templates;
 [Serializable]
-public class ItemRecordTemplate : BasePickupItemRecordTemplate
+public class ItemRecordTemplate : ConfigTableRecordTemplate
 {
-    public List<string> categories { get; set; } = new List<string>();
+    public ItemClass itemClass { get; set; } = ItemClass.None;
     public int techLevel { get; set; } = 0;
     public float price { get; set; } = 0f;
     public float weight { get; set; } = 0f;
     public int inventoryWidthSize { get; set; } = 1;
-    public ItemClass itemClass { get; set; } = ItemClass.None;
+    public List<string> categories { get; set; } = new List<string>();
 }

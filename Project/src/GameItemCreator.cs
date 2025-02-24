@@ -253,6 +253,11 @@ namespace QM_WeaponImporter
             myWeapon.OffSlotCritChance = userWeapon.offSlotCritChance;
             myWeapon.FovLookAngleMult = userWeapon.fovLookAngleMult;
             myWeapon.DoAmputationOnWound = userWeapon.amputationOnWound;
+            myWeapon.ObstaclePierceChanceBonus = userWeapon.obstaclePierceChanceBonus;
+            myWeapon.CreaturePierceBonus = userWeapon.creaturePierceBonus;
+            myWeapon.WoundChanceOnPierce = userWeapon.woundChanceOnPierce;
+            myWeapon.ArmorPenetration = userWeapon.armorPenetration;
+            myWeapon.IsImplicit = userWeapon.isImplicit;
         }
 
         private static void ConfigureMeleeWeapon(ref WeaponRecord myWeapon, MeleeWeaponTemplate userWeapon)

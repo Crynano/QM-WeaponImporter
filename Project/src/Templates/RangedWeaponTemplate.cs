@@ -6,20 +6,6 @@ namespace QM_WeaponImporter
     [Serializable]
     public class RangedWeaponTemplate : WeaponTemplate
     {
-        /// <summary>
-        /// Ranged Properties
-        /// </summary>
-        public bool rangeExtraThrowback { get; set; }
-        public float rangeThrowbackChanceBonus { get; set; }
-        public float bonusScatterAngle { get; set; }
-        public int minRandomAmmoCount { get; set; }
-        public float silencerShotChance { get; set; }
-        public int obstaclePierceChanceBonus { get; set; }
-        public float creaturePierceBonus { get; set; }
-        public float woundChanceOnPierce { get; set; }
-        public List<string> AllowedGrenadeIds { get; set; }
-        public string defaultGrenadeId { get; set; }
-
         public RangedWeaponTemplate() 
         {
             AllowedGrenadeIds = new List<string>();
@@ -67,7 +53,6 @@ namespace QM_WeaponImporter
                 painDamageMultiplier = 1f,
                 critPainDamageMultiplier = 1f,
                 offSlotCritChance = 0,
-                minDmgCapBonus = 0,
                 rampUpValue = 0,
                 fovLookAngleMult = 1f,
                 hasHFGOverlay = false
