@@ -110,12 +110,14 @@ namespace QM_WeaponImporter
             }));
             Parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
             {
+                Logger.SetContext(weaponTemplate.id);
                 GameItemCreator.CreateWeapon(weaponTemplate, GetDescriptor(weaponTemplate.id));
             }));
             // TODO -- port this to the ImportParser
             // ------- eliminate RangedWeaponTemplate
             Parsers.Add(new TemplateParser<RangedWeaponTemplate>("rangedweapons", delegate (RangedWeaponTemplate weaponTemplate)
             {
+                Logger.SetContext(weaponTemplate.id);
                 GameItemCreator.CreateWeapon(weaponTemplate, GetDescriptor(weaponTemplate.id));
             }));
             Parsers.Add(new ImportParser<ItemTransformationRecord>("itemtransforms", delegate (ItemTransformationRecord itemTransformRecord)

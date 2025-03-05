@@ -36,24 +36,12 @@ namespace QM_WeaponImporter
         public static Sprite LoadNewSprite(string path)
         {
             string finalPath = Path.Combine(ConfigManager.rootFolder, path);
-            if (!File.Exists(finalPath))
-            {
-                Logger.LogError($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
-                // Return a white texture why not.
-                return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 2, 2), Vector2.zero);
-            }
             return SpriteImporter.Import(finalPath, Vector2.zero, ImagePixelScaling);
         }
 
         public static Sprite LoadCenteredSprite(string path)
         {
             string finalPath = Path.Combine(ConfigManager.rootFolder, path);
-            if (!File.Exists(finalPath))
-            {
-                Logger.LogError($"Image does not exist at path: \"{path}\"\nFull path: \"{finalPath}\"");
-                // Return a white texture why not.
-                return Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 2, 2), new Vector2(1,1));
-            }
             return SpriteImporter.Import(finalPath, new Vector2(0.5f, 0f), 100f);
         }
 
@@ -69,7 +57,7 @@ namespace QM_WeaponImporter
 
             if (!File.Exists(completePath)) 
             { 
-                Logger.LogError($"Could not find relative bundle with {bundlePath} at {completePath}"); 
+                Logger.LogWarning($"Could not find bundle with {bundlePath} at {completePath}"); 
                 return null; 
             }
 
@@ -87,7 +75,7 @@ namespace QM_WeaponImporter
             }
             else
             {
-                Logger.LogError($"Error when obtaining asset {fileName} from bundle: {bundlePath}");
+                Logger.LogWarning($"Asset {fileName} is missing from bundle: {bundlePath}");
                 return null;
             }
         }

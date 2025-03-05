@@ -40,12 +40,12 @@ namespace QM_WeaponImporter
                 }
                 catch (Exception ex) { }
                 MGSC.Data.Items.AddRecord(myWeapon.Id, myWeapon);
-                Logger.LogInfo($"Weapon [{myWeapon.Id}] loaded successfully.");
+                Logger.LogInfo($"Loaded successfully.");
                 return true;
             }
             catch (Exception e)
             {
-                Logger.LogWarning($"Weapon [{userWeapon.id}] couldn't be added.\n{e.Message}\n{e.StackTrace}");
+                Logger.LogError($"Couldn't be added.\n{e.Message}\n{e.StackTrace}");
                 return false;
             }
         }
@@ -100,99 +100,53 @@ namespace QM_WeaponImporter
             myWeaponDescriptor._overridenRenderId = userWeapon.id;
 
             // Icons
-            myWeaponDescriptor._icon = Importer.LoadNewSprite(weaponDescriptor.iconSpritePath);
-            myWeaponDescriptor._smallIcon = Importer.LoadCenteredSprite(weaponDescriptor.smallIconSpritePath);
-            myWeaponDescriptor._shadow = Importer.LoadCenteredSprite(weaponDescriptor.shadowOnFloorSpritePath);
+            // Added the ability to load resources from another weapon.
+            myWeaponDescriptor._icon =
+                Importer.LoadNewSprite(weaponDescriptor.iconSpritePath)
+                ?? GetIconFromExistingWeapon(weaponDescriptor.iconSpritePath);
+
+            myWeaponDescriptor._smallIcon =
+                Importer.LoadCenteredSprite(weaponDescriptor.smallIconSpritePath)
+                ?? GetSmallIconFromExistingWeapon(weaponDescriptor.smallIconSpritePath);
+
+            myWeaponDescriptor._shadow =
+                Importer.LoadCenteredSprite(weaponDescriptor.shadowOnFloorSpritePath)
+                ?? GetShadowFromExistingWeapon(weaponDescriptor.shadowOnFloorSpritePath);
 
             // If grip is null then a bunch of problems will arise.
             myWeaponDescriptor._grip = userWeapon.grip;
 
-            // Object prefab with muzzle
-            myWeaponDescriptor._prefab = Importer.LoadFileFromBundle<GameObject>(weaponDescriptor.bundlePath, weaponDescriptor.prefabName);
-            myWeaponDescriptor._texture = Importer.LoadFileFromBundle<Texture>(weaponDescriptor.bundlePath, weaponDescriptor.textureName);
-
-            // HFG Overlay?
+            // Simple properties first
             myWeaponDescriptor._hasHFGOverlay = userWeapon.hasHFGOverlay;
-            bool muzzleApplied = false;
-            if (!string.IsNullOrEmpty(weaponDescriptor.baseItemId))
-            {
-                if (Data.Items._records.ContainsKey(weaponDescriptor.baseItemId))
-                {
-                    var overridePropertiesWeapon = MGSC.Data.Items.GetSimpleRecord<WeaponRecord>(weaponDescriptor.baseItemId);
-                    if (overridePropertiesWeapon != null)
-                    {
-                        Logger.LogInfo($"Applying on {myWeapon.Id} the muzzle from {weaponDescriptor.baseItemId}");
-                        WeaponDescriptor overrideWeaponDescriptor = ((WeaponDescriptor)overridePropertiesWeapon.ContentDescriptor);
-                        myWeaponDescriptor._muzzles = overrideWeaponDescriptor._muzzles;
-                        muzzleApplied = true;
-                    }
-                }
-                else
-                {
-                    Logger.LogWarning($"Item with base ID not found: {weaponDescriptor.baseItemId}");
-                }
-            }
-            // If no specified or failed. Then apply default
-            if (!muzzleApplied)
-            {
-                Logger.LogInfo($"Muzzle wasn't herited, applying by default");
-                GameObject muzzleGo = new GameObject($"Weapon [{userWeapon.id}] Muzzle");
-                muzzleGo.transform.parent = myWeaponDescriptor._prefab.transform;
-                Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
-                muzzle._additLightIntencityMult = .5f;
-                muzzle._muzzleIntensityCurve = new AnimationCurve()
-                {
-                    keys =
-                    [
-                         new Keyframe()
-                     {
-                         time = 0,
-                         value = 0,
-                     },
-                     new Keyframe()
-                     {
-                         time = .2f,
-                         value = 0.5f,
-                     }
-                    ],
 
-                };
-                myWeaponDescriptor._muzzles =
-                [
-                    muzzle
-                ];
-            }
+            // Object prefab with muzzle
+            // Let's do it this way. If prefab has a valid ingame id, then load the prefab from the weapon. Otherwise load from file.
+            // Do that for the following properties
 
-            //BulletTemplate userBullet = Importer.Load<BulletTemplate>(userWeapon.bulletAssetPath);
-            //List<Sprite> facadeDecalsSprites = new List<Sprite>();
-            //foreach (string spritePath in userBullet.facadeDecals)
-            //{
-            //    facadeDecalsSprites.Add(Importer.LoadNewSprite(spritePath, 100f));
-            //}
-            // bullets have types. Now we are a bit fucked.
-            // BUT WAIT, WHAT IF I WANT TO USE A GAME BULLET? FUCK!
-            // Filter by type.
-            // I believe override bullet must not be set, it works through ammo description
-            //myWeaponDescriptor._overrideBullet = new CommonBullet()
-            //{
-            //    _bulletSpeed = userBullet.bulletSpeed,
-            //    _makeBloodDecals = userBullet.makeBloodDecals,
-            //    _putShotDecalsOnWalls = userBullet.putShotDecalsOnWalls,
-            //    _putBulletShellsOnFloor = userBullet.putBulletShellsOnFloor,
-            //    _rotateBulletInShotDir = userBullet.rotateBulletInShotDir,
-            //    _shakeDuration = userBullet.shakeDuration,
-            //    _shakeStrength = userBullet.shakeStrength,
-            //    _facadeDecals = facadeDecalsSprites.ToArray(),
-            //    //_gibsController = null;
-            //    _putDecals = userBullet.putDecals
-            //};
+            myWeaponDescriptor._prefab =
+                Importer.LoadFileFromBundle<GameObject>(weaponDescriptor.bundlePath, weaponDescriptor.prefabName)
+                ?? GetPrefabFromExistingWeapon(weaponDescriptor.prefabName);
+
+            myWeaponDescriptor._texture =
+                Importer.LoadFileFromBundle<Texture>(weaponDescriptor.bundlePath, weaponDescriptor.textureName)
+                ?? GetTextureFromExistingWeapon(weaponDescriptor.textureName);
+
+            myWeaponDescriptor._overrideBullet =
+                Importer.LoadFileFromBundle<CommonBullet>(weaponDescriptor.bundlePath, weaponDescriptor.bulletName)
+                ?? GetBulletFromExistingWeapon(weaponDescriptor.bulletName);
+
+            myWeaponDescriptor._muzzles = new Muzzle[1];
+            myWeaponDescriptor._muzzles[0] =
+               Importer.LoadFileFromBundle<Muzzle>(weaponDescriptor.bundlePath, weaponDescriptor.muzzleName)
+               ?? GetMuzzleFromExistingWeapon(weaponDescriptor.muzzleName)
+               ?? LoadDefaultMuzzle();
 
             try
             {
-                SetSounds(ref myWeaponDescriptor._attackSoundBanks, weaponDescriptor.shootSoundPath, weaponDescriptor.baseItemId, 0);
-                SetSounds(ref myWeaponDescriptor._dryShotSoundBanks, weaponDescriptor.dryShotSoundPath, weaponDescriptor.baseItemId, 1);
-                SetSounds(ref myWeaponDescriptor._failedAttackSoundBanks, weaponDescriptor.failedAttackSoundPath, weaponDescriptor.baseItemId, 2);
-                SetSounds(ref myWeaponDescriptor._reloadSoundBanks, weaponDescriptor.reloadSoundPath, weaponDescriptor.baseItemId, 3);
+                SetSounds(ref myWeaponDescriptor._attackSoundBanks, weaponDescriptor.shootSoundPath, 0);
+                SetSounds(ref myWeaponDescriptor._dryShotSoundBanks, weaponDescriptor.dryShotSoundPath, 1);
+                SetSounds(ref myWeaponDescriptor._failedAttackSoundBanks, weaponDescriptor.failedAttackSoundPath, 2);
+                SetSounds(ref myWeaponDescriptor._reloadSoundBanks, weaponDescriptor.reloadSoundPath, 3);
             }
             catch (Exception e)
             {
@@ -200,7 +154,7 @@ namespace QM_WeaponImporter
             }
 
             myWeapon.ContentDescriptor = myWeaponDescriptor;
-            Logger.LogInfo($"Weapon Descriptor for [{userWeapon.id}] has been added successfully!");
+            Logger.LogInfo($"Descriptor added successfully.");
         }
 
         #region Configurators
@@ -333,22 +287,24 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static void SetSounds(ref SoundBank[] soundBank, string soundPath, string baseItemId, int category)
+        private static void SetSounds(ref SoundBank[] soundBank, string soundPath, int category)
         {
             if (soundBank == null)
             {
                 soundBank = new SoundBank[1];
-                soundBank[0] = ScriptableObject.CreateInstance(typeof(SoundBank)) as SoundBank; //new SoundBank();
+                soundBank[0] = ScriptableObject.CreateInstance(typeof(SoundBank)) as SoundBank;
                 soundBank[0]._clips = new AudioClip[1];
             }
 
-            AudioClip audioClip = Importer.ImportAudio(soundPath);
-            if (audioClip == null)
+            var existingWeaponAudio = GetAudiosFromExistingWeapons(soundPath, category);
+            if (existingWeaponAudio != null)
             {
-                soundBank = GetAudiosFromExistingWeapons(baseItemId, category);
+                soundBank = existingWeaponAudio;
                 return;
             }
-            else
+
+            AudioClip audioClip = Importer.ImportAudio(soundPath);
+            if (audioClip != null)
             {
                 soundBank[0]._clips[0] = audioClip;
             }
@@ -356,26 +312,105 @@ namespace QM_WeaponImporter
 
         private static SoundBank[] GetAudiosFromExistingWeapons(string id, int category)
         {
-            WeaponDescriptor selectedWeaponDesc;
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id);
+            if (selectedDescriptor == null) return null;
+            switch (category)
+            {
+                case 0: return selectedDescriptor._attackSoundBanks;
+                case 1: return selectedDescriptor._dryShotSoundBanks;
+                case 2: return selectedDescriptor._failedAttackSoundBanks;
+                case 3: return selectedDescriptor._reloadSoundBanks;
+                default: return null;
+            }
+        }
+
+        private static GameObject GetPrefabFromExistingWeapon(string id)
+        {
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id);
+            return selectedDescriptor is not null ? selectedDescriptor.Prefab : null;
+        }
+
+        private static Texture GetTextureFromExistingWeapon(string id)
+        {
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id);
+            return selectedDescriptor is not null ? selectedDescriptor._texture : null;
+        }
+
+        private static Muzzle GetMuzzleFromExistingWeapon(string id)
+        {
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id, true);
+            return selectedDescriptor is not null && selectedDescriptor._muzzles.Length > 0 ? selectedDescriptor._muzzles[0] : null;
+        }
+
+        private static Muzzle LoadDefaultMuzzle()
+        {
+            GameObject muzzleGo = new GameObject($"Muzzle");
+            Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
+            muzzle._additLightIntencityMult = .5f;
+            muzzle._muzzleIntensityCurve = new AnimationCurve()
+            {
+                keys =
+                [
+                    new Keyframe()
+                    {
+                        time = 0,
+                        value = 0,
+                    },
+                    new Keyframe()
+                    {
+                        time = .05f,
+                        value = 0.5f,
+                    },
+                    new Keyframe()
+                    {
+                        time = .1f,
+                        value = 0,
+                    },
+                ],
+
+            };
+            return muzzle;
+        }
+
+        private static CommonBullet GetBulletFromExistingWeapon(string id)
+        {
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id, true);
+            return selectedDescriptor is not null ? selectedDescriptor._overrideBullet : null;
+        }
+
+        private static Sprite GetIconFromExistingWeapon(string id)
+        {
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id);
+            return selectedDescriptor is not null ? selectedDescriptor.Icon : null;
+        }
+
+        private static Sprite GetSmallIconFromExistingWeapon(string id)
+        {
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id);
+            return selectedDescriptor is not null ? selectedDescriptor.SmallIcon : null;
+        }
+
+        private static Sprite GetShadowFromExistingWeapon(string id)
+        {
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id);
+            return selectedDescriptor is not null ? selectedDescriptor.ShadowOnFloor : null;
+        }
+
+        private static WeaponDescriptor GetExistingWeaponDescriptor(string id, bool getDefault = true)
+        {
+            WeaponDescriptor selectedDescriptor = null;
             if (Data.Items._records.ContainsKey(id))
             {
                 var referenceWeapon = MGSC.Data.Items.GetSimpleRecord<WeaponRecord>(id);
-                selectedWeaponDesc = referenceWeapon.ContentDescriptor as WeaponDescriptor;
-
+                selectedDescriptor = referenceWeapon.ContentDescriptor as WeaponDescriptor;
             }
-            else
+            else if (getDefault)
             {
                 Data.Descriptors.TryGetValue("rangeweapons", out DescriptorsCollection rngWps);
-                selectedWeaponDesc = rngWps._descriptors[0] as WeaponDescriptor;
+                Logger.LogWarning($"Item with ID: <{id}> not found in-game. Using <{rngWps._ids[0]}> as default.");
+                return rngWps._descriptors[0] as WeaponDescriptor;
             }
-            switch (category)
-            {
-                case 0: return selectedWeaponDesc._attackSoundBanks;
-                case 1: return selectedWeaponDesc._dryShotSoundBanks;
-                case 2: return selectedWeaponDesc._failedAttackSoundBanks;
-                case 3: return selectedWeaponDesc._reloadSoundBanks;
-                default: return new SoundBank[] { };
-            }
+            return selectedDescriptor;
         }
 
         private static T StringToEnum<T>(string type) where T : Enum
