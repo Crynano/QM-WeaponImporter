@@ -257,7 +257,8 @@ namespace QM_WeaponImporter
                 {
                     string ids = string.Concat(rewardEntry.ContentIds);
                     Logger.LogInfo($"Adding [{ids}] to {factionRewardTable.FactionName} faction table.");
-                    Data.FactionDrop.AddRecord(factionRewardTable.TableName, rewardEntry);
+                    if (rewardEntry.ContentIds.Count > 0 && Data.Items._records.ContainsKey(rewardEntry.ContentIds[0]))
+                        Data.FactionDrop.AddRecord(factionRewardTable.TableName, rewardEntry);
                 }
             }
         }
