@@ -2,6 +2,7 @@ using MGSC;
 using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace QM_WeaponImporter
@@ -257,10 +258,27 @@ namespace QM_WeaponImporter
                 {
                     string ids = string.Concat(rewardEntry.ContentIds);
                     Logger.LogInfo($"Adding [{ids}] to {factionRewardTable.FactionName} faction table.");
-                    if (rewardEntry.ContentIds.Count > 0 && Data.Items._records.ContainsKey(rewardEntry.ContentIds[0]))
+                    if (rewardEntry.ContentIds.Count > 0 
+                        && Data.Items._records.ContainsKey(rewardEntry.ContentIds[0]))
+                        //we should also check that the factiondrop does not already include that item in a contentid
+                        // !IsItemInFactionTable(factionRewardTable.TableName, rewardEntry.ContentIds[0])
                         Data.FactionDrop.AddRecord(factionRewardTable.TableName, rewardEntry);
                 }
             }
+        }
+
+        private static bool IsItemInFactionTable(string tableName, string rewardId)
+        {
+            var listOfFactionRewards = Data.FactionDrop.GetRawData(tableName).Values;
+            List<string>   idList = new List<string>();
+            foreach (var item in listOfFactionRewards)
+            {
+                foreach (var a in item)
+                {
+                    a.ContentIds.ForEach(idList.Add);
+                }
+            }
+            return idList.Contains(rewardId);
         }
 
         // writes to the localization db entries as passed
