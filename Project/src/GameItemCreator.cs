@@ -270,7 +270,7 @@ namespace QM_WeaponImporter
         private static bool IsItemInFactionTable(string tableName, string rewardId)
         {
             var listOfFactionRewards = Data.FactionDrop.GetRawData(tableName).Values;
-            List<string>   idList = new List<string>();
+            List<string> idList = new List<string>();
             foreach (var item in listOfFactionRewards)
             {
                 foreach (var a in item)
@@ -278,7 +278,9 @@ namespace QM_WeaponImporter
                     a.ContentIds.ForEach(idList.Add);
                 }
             }
-            return idList.Contains(rewardId);
+            bool result = idList.Contains(rewardId);
+            if (result) Logger.LogInfo($"Item {rewardId} already found in {tableName}");
+            return result;
         }
 
         // writes to the localization db entries as passed
