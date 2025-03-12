@@ -12,9 +12,6 @@ public class GiveItemCommand
     private readonly MagnumCargo _magnumCargo;
 
     [Inject(false, AllowNull = true)]
-    private readonly MapGrid _mapGrid;
-
-    [Inject(false, AllowNull = true)]
     private readonly Creatures _creatures;
 
     [Inject(false, AllowNull = true)]
@@ -22,28 +19,43 @@ public class GiveItemCommand
 
     public static string Help(string command, bool verbose)
     {
-        return "Spawn item on the floor or in ship cargo. Syntax: give <itemId>. Press TAB to autocomplete.";
+        return "Spawn X items on the floor or in ship cargo. Default amount is 1.\nSyntax: give <itemId> <itemAmount>.\nPress TAB to autocomplete.";
     }
 
     public string Execute(string[] tokens)
     {
         try
         {
-            BasePickupItem basePickupItem = SingletonMonoBehaviour<ItemFactory>.Instance.CreateForInventory(tokens[0]);
-            if (basePickupItem.Is<DatadiskRecord>())
+            int amountOfItems = 1;
+            if (tokens.Length > 1)
             {
-                DatadiskComponent datadiskComponent = basePickupItem.Comp<DatadiskComponent>();
-                DatadiskRecord datadiskRecord = basePickupItem.Record<DatadiskRecord>();
-                datadiskComponent.SetUnlockId(datadiskRecord.UnlockIds[UnityEngine.Random.Range(0, datadiskRecord.UnlockIds.Count)]);
+                // If user wants more than one, specify
+                if (int.TryParse(tokens[1], out int newAmount))
+                {
+                    if (newAmount < 1) return "ERROR: Please introduce a valid amount of items.";
+                    amountOfItems = newAmount;
+                }
             }
-            if (SingletonMonoBehaviour<DungeonGameMode>.Instance == null)
+            for (int i = 0; i < amountOfItems; i++)
             {
-                _magnumCargo.ShipCargo[0].AddItemAndReshuffleOptional(basePickupItem);
-                return "Added item";
+                BasePickupItem basePickupItem = SingletonMonoBehaviour<ItemFactory>.Instance.CreateForInventory(tokens[0]);
+                if (basePickupItem.Is<DatadiskRecord>())
+                {
+                    DatadiskComponent datadiskComponent = basePickupItem.Comp<DatadiskComponent>();
+                    DatadiskRecord datadiskRecord = basePickupItem.Record<DatadiskRecord>();
+                    datadiskComponent.SetUnlockId(datadiskRecord.UnlockIds[UnityEngine.Random.Range(0, datadiskRecord.UnlockIds.Count)]);
+                }
+                if (SingletonMonoBehaviour<DungeonGameMode>.Instance == null)
+                {
+                    _magnumCargo.ShipCargo[0].AddItemAndReshuffleOptional(basePickupItem);
+                }
+                else
+                {
+                    Player player = _creatures.Player;
+                    ItemOnFloorSystem.SpawnItem(_itemsOnFloor, basePickupItem, player.CreatureData.Position);
+                }
             }
-            Player player = _creatures.Player;
-            ItemOnFloorSystem.SpawnItem(_itemsOnFloor, basePickupItem, player.CreatureData.Position);
-            return "Added item";
+            return amountOfItems == 1 ? "Added item!" : $"Added {amountOfItems} items!" ;
         }
         catch (NullReferenceException exception)
         {
