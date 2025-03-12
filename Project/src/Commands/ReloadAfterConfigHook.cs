@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using MGSC;
 using System.Linq;
+using QM_WeaponImporter;
 
-namespace QM_WeaponImporter;
+namespace QM_WeaponImporter.Commands;
 
 [ConsoleCommand(new string[] { "reloadhook" })]
 public class ReloadAfterConfigHook
