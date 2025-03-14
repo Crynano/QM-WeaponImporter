@@ -247,8 +247,11 @@ namespace QM_WeaponImporter
                         if (!Directory.Exists(folderPath))
                         {
                             Logger.LogWarning($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
-                            return false;
+                            continue;
                         }
+#if DEBUG
+                        Logger.LogInfo($"Adding localization from {folderPath} for {filePath.Key}");
+#endif
                         DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
                         FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
                         foreach (FileInfo singleFile in files)
@@ -258,9 +261,26 @@ namespace QM_WeaponImporter
 
                             // for now with the mod being item focused, the template is only concerned with name and shortdesc
                             // this can be expanded later
-                            string key = filePath.Key.ToLower();
-                            GameItemCreator.AddLocalization(key, "name", json.name);
-                            GameItemCreator.AddLocalization(key, "shortdesc", json.shortdesc);
+                            // Now that we are expanding, ignore the ToLower requirement.
+                            // And also, use the table name instead of a hardcoded entry
+                            string key = filePath.Key; //.ToLower();
+                            string nameGroup = "name";
+                            string descGroup = "shortdesc";
+                            switch(key)
+                            {
+                                case "station": 
+                                    descGroup = "type"; 
+                                    GameItemCreator.AddLocalization(key, "shortname", json.name); 
+                                    break;
+                                case "alliance":
+                                    descGroup = "subName";
+                                    break;
+                                case "faction":
+                                    descGroup = "desc";
+                                    break;
+                            }
+                            GameItemCreator.AddLocalization(key, nameGroup, json.name);
+                            GameItemCreator.AddLocalization(key, descGroup, json.shortdesc);
 
                             //Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
                         }
