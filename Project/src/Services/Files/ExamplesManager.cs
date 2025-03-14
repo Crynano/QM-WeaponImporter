@@ -6,7 +6,7 @@ namespace QM_WeaponImporter.Services
 {
     internal class ExamplesManager
     {
-        public void CreateExampleFiles(string rootPath)
+        public static void CreateExampleFiles(string rootPath)
         {
             CreateExampleFile(new BulletTemplate(), rootPath);
             CreateExampleFile(LocalizationTemplate.GetExample(), rootPath);
@@ -24,6 +24,7 @@ namespace QM_WeaponImporter.Services
             CreateExampleFile(BootsTemplate.GetExample(), rootPath);
             CreateExampleFile(RepairTemplate.GetExample(), rootPath);
             CreateExampleFile(GrenadeTemplate.GetExample(), rootPath);
+            CreateExampleFile(ConsumableRecordTemplate.GetExample(), rootPath);
             CreateExampleFile(new MGSC.ItemTransformationRecord()
             {
                 Id = "Example ID",
@@ -34,7 +35,7 @@ namespace QM_WeaponImporter.Services
             CreateExampleFile(FireModeRecordTemplate.GetExample(), rootPath);
         }
 
-        private void CreateExampleFile<T>(T objectType, string root)
+        private static void CreateExampleFile<T>(T objectType, string root)
         {
             if (objectType == null) return;
 
