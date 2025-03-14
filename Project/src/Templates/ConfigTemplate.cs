@@ -45,7 +45,9 @@ namespace QM_WeaponImporter
                 {
                     { "item", "Assets/Localization/Items"},
                     { "Ui", "Assets/Localization/UI" },
-                    { "Firemode", "Assets/Localization/Firemodes" }
+                    { "Firemode", "Assets/Localization/Firemodes" },
+                    { "faction", "Assets/Localization/Factions" },
+                    { "station", "Assets/Localization/Stations" }
                 },
                 folderPaths = new Dictionary<string, string>
                 {
