@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using MGSC;
 
-namespace MGSC;
+namespace QM_WeaponImporter;
 
 [ConsoleCommand(new string[] { "give" })]
 public class GiveItemCommand
