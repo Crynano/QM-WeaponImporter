@@ -126,7 +126,7 @@ namespace QM_WeaponImporter
             {
                 CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
                 ConsumableDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ConsumableDescriptor>();
-                itemContentDescriptor._useSound = ExtractCustomParameter<AudioClip>(customItemDescriptor.customParameters, "UseEatSound") ?? null;
+                itemContentDescriptor._useSound = Importer.ImportAudio(ExtractCustomParameter(customItemDescriptor.customParameters, "UseEatSound"));
                 item.ContentDescriptor = itemContentDescriptor;
                 AddItemToGame(item);
             }));
@@ -435,14 +435,11 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static T ExtractCustomParameter<T>(Dictionary<string, string[]> descriptorParameters, string parameter)
+        private static string ExtractCustomParameter(Dictionary<string, string[]> descriptorParameters, string parameter)
         {
             descriptorParameters.TryGetValue(parameter, out string[] customParameters);
-            if (descriptorParameters == null || customParameters == null) return default(T);
-            var converter = TypeDescriptor.GetConverter(typeof(T));
-            if (converter != null && converter.IsValid(customParameters[0]))
-                return (T)converter.ConvertFromString(customParameters[0]);
-            else return default(T);
+            if (descriptorParameters == null || customParameters == null) return null;
+            return customParameters[0];
         }
 
         public static CustomItemContentDescriptor GetDescriptor(string id)

@@ -16,7 +16,6 @@ namespace QM_WeaponImporter.Services
             CreateExampleFile(new CustomItemContentDescriptor(), rootPath);
             CreateExampleFile(MedTemplate.GetExample(), rootPath);
             CreateExampleFile(new MGSC.ConsumableRecord(), rootPath);
-            CreateExampleFile(new MGSC.TrashRecord(), rootPath);
             CreateExampleFile(VestTemplate.GetExample(), rootPath);
             CreateExampleFile(HelmetTemplate.GetExample(), rootPath);
             CreateExampleFile(ArmorTemplate.GetExample(), rootPath);
@@ -25,6 +24,7 @@ namespace QM_WeaponImporter.Services
             CreateExampleFile(RepairTemplate.GetExample(), rootPath);
             CreateExampleFile(GrenadeTemplate.GetExample(), rootPath);
             CreateExampleFile(ConsumableRecordTemplate.GetExample(), rootPath);
+            CreateExampleFile(TrashRecordTemplate.GetExample(), rootPath);
             CreateExampleFile(new MGSC.ItemTransformationRecord()
             {
                 Id = "Example ID",
