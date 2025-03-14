@@ -2,14 +2,13 @@ using MGSC;
 using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace QM_WeaponImporter
 {
     internal static class GameItemCreator
     {
-        public static bool CreateWeapon(WeaponTemplate userWeapon, CustomItemContentDescriptor weaponDescriptor)
+        internal static bool CreateWeapon(WeaponTemplate userWeapon, CustomItemContentDescriptor weaponDescriptor)
         {
             try
             {
@@ -127,6 +126,13 @@ namespace QM_WeaponImporter
             myWeaponDescriptor._prefab =
                 Importer.LoadFileFromBundle<GameObject>(weaponDescriptor.bundlePath, weaponDescriptor.prefabName)
                 ?? GetPrefabFromExistingWeapon(weaponDescriptor.prefabName);
+
+            try
+            {
+                var itemBone = myWeaponDescriptor._prefab.GetComponent<MGSC.ItemBone>();
+                if (itemBone != null) itemBone.Scale = new Vector3(weaponDescriptor.scaleValue, weaponDescriptor.scaleValue, weaponDescriptor.scaleValue);
+            }
+            catch (Exception ex) { Logger.LogWarning($"Error when setting custom scale to prefab.\n{ex.Message}"); }
 
             myWeaponDescriptor._texture =
                 Importer.LoadFileFromBundle<Texture>(weaponDescriptor.bundlePath, weaponDescriptor.textureName)
@@ -258,7 +264,7 @@ namespace QM_WeaponImporter
                 {
                     string ids = string.Concat(rewardEntry.ContentIds);
                     Logger.LogInfo($"Adding [{ids}] to {factionRewardTable.FactionName} faction table.");
-                    if (rewardEntry.ContentIds.Count > 0 
+                    if (rewardEntry.ContentIds.Count > 0
                         && Data.Items._records.ContainsKey(rewardEntry.ContentIds[0]))
                         //we should also check that the factiondrop does not already include that item in a contentid
                         // !IsItemInFactionTable(factionRewardTable.TableName, rewardEntry.ContentIds[0])

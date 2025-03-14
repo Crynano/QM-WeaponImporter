@@ -18,13 +18,14 @@ public class CustomItemContentDescriptor
     public string reloadSoundPath { get; set; } = string.Empty;
     public string bundlePath { get; set; } = string.Empty;
     public string prefabName { get; set; } = string.Empty;
+    public float scaleValue { get; set; } = 0.06f;
     public string textureName {  get; set; } = string.Empty;
     public string bulletName { get; set; } = string.Empty;
     public string muzzleName { get; set; } = string.Empty;
 
     public Dictionary<string, string[]> customParameters = new Dictionary<string, string[]>()
     {
-        { "sprites", ["Assets/Sprites/weaponSprite01", "Assets/Sprites/weaponSprite02"] }
+        
     };
 
     public virtual T GetOriginal<T>() where T : ItemContentDescriptor

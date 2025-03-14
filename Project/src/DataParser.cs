@@ -15,7 +15,7 @@ namespace QM_WeaponImporter
     // BUt if multiple mods are loading stuff at the same time, they should have the file or class and say, load these weapons please.
     // The class should include the root folder. Maybe a simple ../ would work but let's check.
     // We can assume it wont be needed but yeah.
-    internal static class ConfigManager
+    internal static class DataParser
     {
         public static string rootFolder;
 
@@ -34,52 +34,6 @@ namespace QM_WeaponImporter
                 // If it doesn't work, interrupt
                 Logger.LogError($"Interrupting Mod Load: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
                 throw new NullReferenceException($"Critical error: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
-            }
-        }
-
-        private static bool LoadLocalization(ConfigTemplate userConfig)
-        {
-            Dictionary<string, string> localPaths = userConfig.localizationPaths;
-            if (localPaths != null || localPaths.Count > 0)
-            {
-                foreach (KeyValuePair<string, string> filePath in localPaths)
-                {
-                    try
-                    {
-                        string folderPath = Path.Combine(rootFolder, filePath.Value);
-                        if (!Directory.Exists(folderPath))
-                        {
-                            Logger.LogWarning($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
-                            return false;
-                        }
-                        DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
-                        FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
-                        foreach (FileInfo singleFile in files)
-                        {
-                            string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
-                            LocalizationTemplate json = JsonConvert.DeserializeObject<LocalizationTemplate>(configItemContent);
-
-                            // for now with the mod being item focused, the template is only concerned with name and shortdesc
-                            // this can be expanded later
-                            string key = filePath.Key.ToLower();
-                            GameItemCreator.AddLocalization(key, "name", json.name);
-                            GameItemCreator.AddLocalization(key, "shortdesc", json.shortdesc);
-
-                            //Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.LogError($"Failed for {filePath.Value}.\n{e.Message}\n{e.StackTrace}");
-                        continue;
-                    }
-                }
-                return true;
-            }
-            else
-            {
-                //Logger.LogInfo($"No Localization file path set.");
-                return false;
             }
         }
 
@@ -280,7 +234,53 @@ namespace QM_WeaponImporter
             }));
         }
 
-        public static bool ImportConfig(string configPath)
+        internal static bool LoadLocalization(ConfigTemplate userConfig)
+        {
+            Dictionary<string, string> localPaths = userConfig.localizationPaths;
+            if (localPaths != null || localPaths.Count > 0)
+            {
+                foreach (KeyValuePair<string, string> filePath in localPaths)
+                {
+                    try
+                    {
+                        string folderPath = Path.Combine(rootFolder, filePath.Value);
+                        if (!Directory.Exists(folderPath))
+                        {
+                            Logger.LogWarning($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
+                            return false;
+                        }
+                        DirectoryInfo weaponsDirInfo = new DirectoryInfo(folderPath);
+                        FileInfo[] files = weaponsDirInfo.GetFiles("*.json");
+                        foreach (FileInfo singleFile in files)
+                        {
+                            string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
+                            LocalizationTemplate json = JsonConvert.DeserializeObject<LocalizationTemplate>(configItemContent);
+
+                            // for now with the mod being item focused, the template is only concerned with name and shortdesc
+                            // this can be expanded later
+                            string key = filePath.Key.ToLower();
+                            GameItemCreator.AddLocalization(key, "name", json.name);
+                            GameItemCreator.AddLocalization(key, "shortdesc", json.shortdesc);
+
+                            //Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError($"Failed for {filePath.Value}.\n{e.Message}\n{e.StackTrace}");
+                        continue;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                //Logger.LogInfo($"No Localization file path set.");
+                return false;
+            }
+        }
+
+        internal static bool ImportConfig(string configPath)
         {
             if (string.IsNullOrEmpty(configPath))
             {
@@ -292,7 +292,7 @@ namespace QM_WeaponImporter
 
         // Create the global config in the assembly folder.
         // You only send the config over, then everything else is automatic.
-        public static bool ImportConfig(ConfigTemplate userConfig, string rootPath)
+        internal static bool ImportConfig(ConfigTemplate userConfig, string rootPath)
         {
             rootFolder = rootPath;
             // We should check the root first.

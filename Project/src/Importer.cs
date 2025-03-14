@@ -35,13 +35,13 @@ namespace QM_WeaponImporter
 
         public static Sprite LoadNewSprite(string path)
         {
-            string finalPath = Path.Combine(ConfigManager.rootFolder, path);
+            string finalPath = Path.Combine(DataParser.rootFolder, path);
             return SpriteImporter.Import(finalPath, Vector2.zero, ImagePixelScaling);
         }
 
         public static Sprite LoadCenteredSprite(string path)
         {
-            string finalPath = Path.Combine(ConfigManager.rootFolder, path);
+            string finalPath = Path.Combine(DataParser.rootFolder, path);
             return SpriteImporter.Import(finalPath, new Vector2(0.5f, 0f), 100f);
         }
 
@@ -53,7 +53,7 @@ namespace QM_WeaponImporter
                 return null;
             }
 
-            var completePath = Path.Combine(ConfigManager.rootFolder, bundlePath);
+            var completePath = Path.Combine(DataParser.rootFolder, bundlePath);
 
             if (!File.Exists(completePath)) 
             { 
@@ -105,7 +105,7 @@ namespace QM_WeaponImporter
                 Logger.LogWarning($"Path was null when importing an audio file");
                 return null;
             }
-            string finalPath = Path.Combine(ConfigManager.rootFolder, relativePath);
+            string finalPath = Path.Combine(DataParser.rootFolder, relativePath);
             if (!File.Exists(finalPath))
             {
                 //throw new NullReferenceException($"Audio at {finalPath} does not exist.");

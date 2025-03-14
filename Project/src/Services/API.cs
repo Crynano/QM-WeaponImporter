@@ -13,7 +13,7 @@ public static class API
         Setup(modName);
         try
         {
-            var result = ConfigManager.ImportConfig(rootPath);
+            var result = DataParser.ImportConfig(rootPath);
             return result;
         }
         catch (Exception e)
@@ -38,7 +38,7 @@ public static class API
             }
             else
             {
-                var result = ConfigManager.ImportConfig(userConfig, dataFolderRoot);
+                var result = DataParser.ImportConfig(userConfig, dataFolderRoot);
                 return result;
             }
         }
