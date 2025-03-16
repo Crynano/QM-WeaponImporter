@@ -123,14 +123,19 @@ namespace QM_WeaponImporter
             // Let's do it this way. If prefab has a valid ingame id, then load the prefab from the weapon. Otherwise load from file.
             // Do that for the following properties
 
-            myWeaponDescriptor._prefab =
-                Importer.LoadFileFromBundle<GameObject>(weaponDescriptor.bundlePath, weaponDescriptor.prefabName)
-                ?? GetPrefabFromExistingWeapon(weaponDescriptor.prefabName);
+            var weaponPrefab = Importer.LoadFileFromBundle<GameObject>(weaponDescriptor.bundlePath, weaponDescriptor.prefabName);
+            var applyScale = true;
+            if (weaponPrefab == null)
+            {
+                weaponPrefab = GetPrefabFromExistingWeapon(weaponDescriptor.prefabName);
+                applyScale = false;
+            }
+            myWeaponDescriptor._prefab = GameObject.Instantiate(weaponPrefab);
 
             try
             {
                 var itemBone = myWeaponDescriptor._prefab.GetComponent<MGSC.ItemBone>();
-                if (itemBone != null) itemBone.Scale = new Vector3(weaponDescriptor.scaleValue, weaponDescriptor.scaleValue, weaponDescriptor.scaleValue);
+                if (itemBone != null && applyScale) itemBone.Scale = new Vector3(weaponDescriptor.scaleValue, weaponDescriptor.scaleValue, weaponDescriptor.scaleValue);
             }
             catch (Exception ex) { Logger.LogWarning($"Error when setting custom scale to prefab.\n{ex.Message}"); }
 
@@ -354,7 +359,7 @@ namespace QM_WeaponImporter
         private static GameObject GetPrefabFromExistingWeapon(string id)
         {
             WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id);
-            return selectedDescriptor is not null ? selectedDescriptor.Prefab : null;
+            return selectedDescriptor is not null ? selectedDescriptor._prefab : null;
         }
 
         private static Texture GetTextureFromExistingWeapon(string id)
