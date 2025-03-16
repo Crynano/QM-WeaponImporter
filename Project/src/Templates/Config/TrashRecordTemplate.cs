@@ -1,8 +1,7 @@
 ﻿using MGSC;
 using Newtonsoft.Json;
-using QM_WeaponImporter.Templates;
 
-namespace QM_WeaponImporter;
+namespace QM_WeaponImporter.Templates;
 
 public class TrashRecordTemplate : ItemRecordTemplate
 {
