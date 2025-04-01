@@ -1,5 +1,6 @@
 ﻿#if DEBUG
 using MGSC;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -43,13 +44,15 @@ namespace QM_WeaponImporter.Commands
 
             TurnController turnController = dungeonGameMode._state.Get<TurnController>();
 
-            if (!CreatureSystem.SpawnMonsterFromMobClass(dungeonGameMode._state.Get<Difficulty>(),
-                creatures, turnController, creatureId, new CellPosition(cell.X, cell.Y)))
+            try
             {
-                return "Spawn Monster failed";
+                CreatureSystem.SpawnMonsterFromMobClass(dungeonGameMode._state.Get<Difficulty>(), creatures, turnController, creatureId, new CellPosition(cell.X, cell.Y));
+                return "Spawned Enemy successfully!";
             }
-
-            return "Spawned Enemy successfully!";
+            catch (Exception ex)
+            {
+                return $"Mob spawning failed\n{ex.Message}";
+            }
         }
 
         /// <summary>
