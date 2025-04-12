@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 using UnityEngine;
 
@@ -9,7 +8,6 @@ namespace QM_WeaponImporter
     public static class ConfigDirectories
     {
         public static string WeaponImporterName { get; private set; } = Assembly.GetExecutingAssembly().GetName().Name;
-        public static string WeaponImporterRootPath { get; private set; } = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
         /// <summary>
         /// The Quasimorph_Mods folder that is parallel to the game's folder.
