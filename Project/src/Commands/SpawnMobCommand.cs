@@ -44,15 +44,15 @@ namespace QM_WeaponImporter.Commands
 
             TurnController turnController = dungeonGameMode._state.Get<TurnController>();
 
-            try
-            {
+            //try
+            //{
                 CreatureSystem.SpawnMonsterFromMobClass(dungeonGameMode._state.Get<Difficulty>(), creatures, turnController, creatureId, new CellPosition(cell.X, cell.Y));
+            //}
+            //catch (Exception ex)
+            //{
+            //    return $"Mob spawning failed\n{ex.Message}";
+            //}
                 return "Spawned Enemy successfully!";
-            }
-            catch (Exception ex)
-            {
-                return $"Mob spawning failed\n{ex.Message}";
-            }
         }
 
         /// <summary>

@@ -78,7 +78,9 @@ public class GiveItemCommand
         List<string> list2 = new List<string>();
         foreach (string item in list)
         {
-            list2.Add(command + " " + item);
+            // Also add its localization name.
+            string locName = Localization.Get("item." + item + ".name").FirstLetterToUpperCase() ?? "missing name";
+            list2.Add(command + " " + item + $" ({locName})");
         }
         return list2;
     }
