@@ -2,6 +2,7 @@ using MGSC;
 using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace QM_WeaponImporter
@@ -123,21 +124,28 @@ namespace QM_WeaponImporter
             // Let's do it this way. If prefab has a valid ingame id, then load the prefab from the weapon. Otherwise load from file.
             // Do that for the following properties
 
+            bool prefabFromGame = false;
             var weaponPrefab = Importer.LoadFileFromBundle<GameObject>(weaponDescriptor.bundlePath, weaponDescriptor.prefabName);
-            var applyScale = true;
             if (weaponPrefab == null)
             {
                 weaponPrefab = GetPrefabFromExistingWeapon(weaponDescriptor.prefabName);
-                applyScale = false;
+                prefabFromGame = true;
             }
-            myWeaponDescriptor._prefab = GameObject.Instantiate(weaponPrefab);
+            // It should NOT instantiate the prefab, right?
+            // Its just a reference...
+            myWeaponDescriptor._prefab = weaponPrefab; // GameObject.Instantiate(weaponPrefab);
 
             try
             {
-                var itemBone = myWeaponDescriptor._prefab.GetComponent<MGSC.ItemBone>();
-                if (itemBone != null && applyScale) itemBone.Scale = new Vector3(weaponDescriptor.scaleValue, weaponDescriptor.scaleValue, weaponDescriptor.scaleValue);
+                var itemBone = myWeaponDescriptor._prefab.GetComponent<ItemBone>();
+                if (itemBone != null && !prefabFromGame) itemBone.Scale =
+                        new Vector3(
+                            weaponDescriptor.scaleValue,
+                            weaponDescriptor.scaleValue,
+                            weaponDescriptor.scaleValue);
             }
-            catch (Exception ex) { Logger.LogWarning($"Error when setting custom scale to prefab.\n{ex.Message}"); }
+            catch (MissingComponentException ex) { Logger.LogWarning($"Missing component when setting custom scale to prefab."); }
+            catch (Exception ex) { Logger.LogWarning($"Unhandled exception when setting custom scale to prefab.\n{ex.Message}"); }
 
             myWeaponDescriptor._texture =
                 Importer.LoadFileFromBundle<Texture>(weaponDescriptor.bundlePath, weaponDescriptor.textureName)
@@ -148,10 +156,11 @@ namespace QM_WeaponImporter
                 ?? GetBulletFromExistingWeapon(weaponDescriptor.bulletName);
 
             myWeaponDescriptor._muzzles = new Muzzle[1];
-            myWeaponDescriptor._muzzles[0] =
+            var validMuzzle =
                Importer.LoadFileFromBundle<Muzzle>(weaponDescriptor.bundlePath, weaponDescriptor.muzzleName)
                ?? GetMuzzleFromExistingWeapon(weaponDescriptor.muzzleName)
-               ?? LoadDefaultMuzzle();
+               ?? LoadDefaultMuzzle(myWeaponDescriptor._prefab, weaponDescriptor.attachedId);
+            myWeaponDescriptor._muzzles[0] = validMuzzle;
 
             try
             {
@@ -319,7 +328,7 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static void SetSounds(ref SoundBank[] soundBank, string soundPath, int category)
+        private static void SetSounds(ref SoundBank[] soundBank, string soundPath, int category, bool fallbackToDefault = false)
         {
             if (soundBank == null)
             {
@@ -328,23 +337,27 @@ namespace QM_WeaponImporter
                 soundBank[0]._clips = new AudioClip[1];
             }
 
-            var existingWeaponAudio = GetAudiosFromExistingWeapons(soundPath, category);
-            if (existingWeaponAudio != null)
-            {
-                soundBank = existingWeaponAudio;
-                return;
-            }
-
             AudioClip audioClip = Importer.ImportAudio(soundPath);
             if (audioClip != null)
             {
+                Logger.LogInfo($"Found audio for {soundPath}");
                 soundBank[0]._clips[0] = audioClip;
+                return;
             }
+            Logger.LogWarning($"Unable to find sound using {soundPath} as path. Trying to load sound from ID.");
+            var existingWeaponAudio = GetAudiosFromExistingWeapons(soundPath, category, fallbackToDefault);
+            if (existingWeaponAudio != null)
+            {
+                Logger.LogInfo($"Found audio for {soundPath} with in-game variation");
+                soundBank = existingWeaponAudio;
+                return;
+            }
+            Logger.LogError($"Unable to find any sound for weapon with {soundPath}");
         }
 
-        private static SoundBank[] GetAudiosFromExistingWeapons(string id, int category)
+        private static SoundBank[] GetAudiosFromExistingWeapons(string id, int category, bool fallbackToDefault)
         {
-            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id);
+            WeaponDescriptor selectedDescriptor = GetExistingWeaponDescriptor(id, fallbackToDefault);
             if (selectedDescriptor == null) return null;
             switch (category)
             {
@@ -374,10 +387,11 @@ namespace QM_WeaponImporter
             return selectedDescriptor is not null && selectedDescriptor._muzzles.Length > 0 ? selectedDescriptor._muzzles[0] : null;
         }
 
-        private static Muzzle LoadDefaultMuzzle()
+        private static Muzzle LoadDefaultMuzzle(GameObject parentGO, string weaponName)
         {
-            GameObject muzzleGo = new GameObject($"Muzzle");
-            Muzzle muzzle = muzzleGo.AddComponent<Muzzle>();
+            //GameObject muzzleGo = new GameObject($"{weaponName}_muzzle");
+            var muzzleGO = parentGO.transform.Find("Muzzle");
+            Muzzle muzzle = muzzleGO.GetComponent<Muzzle>() ?? muzzleGO.gameObject.AddComponent<Muzzle>();
             muzzle._additLightIntencityMult = .5f;
             muzzle._muzzleIntensityCurve = new AnimationCurve()
             {
@@ -431,7 +445,7 @@ namespace QM_WeaponImporter
         private static WeaponDescriptor GetExistingWeaponDescriptor(string id, bool getDefault = true)
         {
             WeaponDescriptor selectedDescriptor = null;
-            if (Data.Items._records.ContainsKey(id))
+            if (!string.IsNullOrEmpty(id) && Data.Items._records.ContainsKey(id))
             {
                 var referenceWeapon = MGSC.Data.Items.GetSimpleRecord<WeaponRecord>(id);
                 selectedDescriptor = referenceWeapon.ContentDescriptor as WeaponDescriptor;
@@ -439,7 +453,14 @@ namespace QM_WeaponImporter
             else if (getDefault)
             {
                 Data.Descriptors.TryGetValue("rangeweapons", out DescriptorsCollection rngWps);
-                Logger.LogWarning($"Item with ID: <{id}> not found in-game. Using <{rngWps._ids[0]}> as default.");
+                if (string.IsNullOrEmpty(id))
+                {
+                    Logger.LogWarning($"ID is empty or null. Using <{rngWps._ids[0]}> as default.");
+                }
+                else
+                {
+                    Logger.LogWarning($"Item with ID: <{id}> not found in-game. Using <{rngWps._ids[0]}> as default.");
+                }
                 return rngWps._descriptors[0] as WeaponDescriptor;
             }
             return selectedDescriptor;

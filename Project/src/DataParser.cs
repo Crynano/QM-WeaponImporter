@@ -257,7 +257,16 @@ namespace QM_WeaponImporter
                         foreach (FileInfo singleFile in files)
                         {
                             string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
-                            LocalizationTemplate json = JsonConvert.DeserializeObject<LocalizationTemplate>(configItemContent);
+                            LocalizationTemplate json;
+                            try
+                            {
+                                json = JsonConvert.DeserializeObject<LocalizationTemplate>(configItemContent);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogError($"Could not deserialize localization file. Error:{ex.Message}");
+                                continue;
+                            }
 
                             // for now with the mod being item focused, the template is only concerned with name and shortdesc
                             // this can be expanded later
@@ -314,6 +323,7 @@ namespace QM_WeaponImporter
         // You only send the config over, then everything else is automatic.
         internal static bool ImportConfig(ConfigTemplate userConfig, string rootPath)
         {
+            DateTime now = DateTime.Now;
             rootFolder = rootPath;
             // We should check the root first.
             // See if atleast has the config file...
@@ -348,10 +358,10 @@ namespace QM_WeaponImporter
                 Logger.LogError($"Configuration failed for {rootPath}.\n{e.Message}\n{e.StackTrace}");
                 return false;
             }
-            //finally
-            //{
-            //    Logger.FlushAdditive();
-            //}
+            finally
+            {
+                Logger.LogInfo($"Import process took {(DateTime.Now - now).TotalSeconds:0.00} seconds.");
+            }
         }
 
 
