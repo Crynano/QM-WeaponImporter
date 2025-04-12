@@ -1,5 +1,4 @@
 ﻿using MGSC;
-using QM_WeaponImporter.Services;
 
 namespace QM_WeaponImporter
 {
@@ -8,7 +7,7 @@ namespace QM_WeaponImporter
         [Hook(ModHookType.AfterConfigsLoaded)]
         public static void Start(IModContext context)
         {
-            API.LoadModConfig(ConfigDirectories.WeaponImporterName, ConfigDirectories.WeaponImporterRootPath);
+            API.LoadModConfig(ConfigDirectories.WeaponImporterName, context.ModContentPath);
 #if DEBUG
             ExamplesManager.CreateExampleFiles(ConfigDirectories.WeaponImporterRootPath);
 #endif
