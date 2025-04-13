@@ -1,4 +1,7 @@
 ﻿using MGSC;
+#if DEBUG
+using QM_WeaponImporter.Services;
+#endif
 
 namespace QM_WeaponImporter
 {
@@ -9,7 +12,7 @@ namespace QM_WeaponImporter
         {
             API.LoadModConfig(ConfigDirectories.WeaponImporterName, context.ModContentPath);
 #if DEBUG
-            ExamplesManager.CreateExampleFiles(ConfigDirectories.WeaponImporterRootPath);
+            ExamplesManager.CreateExampleFiles(context.ModContentPath);
 #endif
         }
     }
