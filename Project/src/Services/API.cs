@@ -27,6 +27,31 @@ public static class API
         return false;
     }
 
+    /// <summary>
+    /// Automatically gets the reference from the given Mod context provided by MGSC
+    /// </summary>
+    /// <param name="modName">The name of the mod. No restrictions.</param>
+    /// <param name="context">Mod context provided by MGSC. It is used to define the path.</param>
+    /// <returns></returns>
+    public static bool LoadModConfig(string modName, MGSC.IModContext context)
+    {
+        Setup(modName);
+        try
+        {
+            var result = DataParser.ImportConfig(context.ModContentPath);
+            return result;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"Mod with path {context.ModContentPath} could not be loaded.\n{e.Message}\n{e.Source}");
+        }
+        finally
+        {
+            Logger.FlushAdditive();
+        }
+        return false;
+    }
+
     public static bool LoadModConfig(string modName, ConfigTemplate userConfig, string dataFolderRoot)
     {
         Setup(modName);
