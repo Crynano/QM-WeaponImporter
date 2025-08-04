@@ -56,7 +56,7 @@ public class ConsumableRecordTemplate : UsableItemRecordTemplate
     {
         return new ConsumableRecordTemplate()
         {
-            id = "example_consumable_id"
+            Id = "example_consumable_id"
         };
     }
 }

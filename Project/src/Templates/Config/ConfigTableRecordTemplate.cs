@@ -3,5 +3,5 @@ using Newtonsoft.Json;
 public abstract class ConfigTableRecordTemplate
 {
     [JsonProperty(Order = 1)]
-    public string id { get; set; } = string.Empty;
+    public string Id { get; set; } = string.Empty;
 }

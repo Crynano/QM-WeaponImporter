@@ -1,4 +1,8 @@
 ﻿using System;
+using MGSC;
+using QM_WeaponImporter.Services.Items;
+using QM_WeaponImporter.Templates;
+using UnityEngine;
 
 namespace QM_WeaponImporter;
 public static class API
@@ -80,7 +84,63 @@ public static class API
 
     private static void Setup(string modName)
     {
-        ConfigDirectories.CreateLogFolders(modName);
+        ConfigManager.CreateLogFolders(modName);
         Logger.SetConfig(modName);
     }
+
+    #region Helper Methods
+    
+    /// <summary>
+    /// Gets a property from an existing in-game item from the MGSC.Data.Items list.
+    /// </summary>
+    /// <param name="id">The id of the item.</param>
+    /// <param name="propertyName">Property Name you want to obtain. CASE-SENSITIVE</param>
+    /// <typeparam name="T">Descriptor type. e.g. ItemDescriptor, WoundDescriptor, etc</typeparam>
+    /// <returns></returns>
+    public static object GetPropertyFromItem<T>(string id, string propertyName) where T : ScriptableObject
+    {
+        return ItemPropertyObtainer.GetPropertyFromItem<T>(id, propertyName);
+    }
+
+    /// <summary>
+    /// Gets a property from an existing item contained in a given list.
+    /// </summary>
+    /// <param name="id">The id of the item.</param>
+    /// <param name="propertyName">Property Name you want to obtain. CASE-SENSITIVE</param>
+    /// <param name="list">The list where the item is contained. Usually MGSC.Data.Items or similar.</param>
+    /// <typeparam name="T">Record type. For example WoundRecord. Must match the Record type from parameter T2.
+    /// e.g. T:WoundRecord, T2:WoundDescriptor.</typeparam>
+    /// <typeparam name="T2">Descriptor type. For example WoundDescriptor. Must match the Record type from parameter T.
+    /// e.g. T:WoundRecord, T2:WoundDescriptor.</typeparam>
+    /// <returns></returns>
+    public static object GetPropertyFromList<T, T2>(string id, string propertyName, ConfigRecordCollection<T> list)
+        where T : ConfigTableRecord where T2 : ScriptableObject
+    {
+        return ItemPropertyObtainer.GetPropertyFromList<T, T2>(id, propertyName, list);
+    }
+    
+    /// <summary>
+    /// Adds localized text to a specific language.
+    /// </summary>
+    /// <param name="fullyQualifiedKey">The full key, containing category and identifier.
+    /// e.g. item.example_id.name, perk.item_example.desc</param>
+    /// <param name="text">The localized text to be displayed.</param>
+    /// <param name="language">Language enum from MGSC.Localization.Lang</param>
+    public static void AddLocalization(string fullyQualifiedKey, string text, MGSC.Localization.Lang language)
+    {
+        LocalizationHelper.AddLocalization(fullyQualifiedKey, text, language);
+    }
+
+    /// <summary>
+    /// Adds the same text to all languages.
+    /// </summary>
+    /// <param name="fullyQualifiedKey">The full key, containing category and identifier.
+    /// e.g. item.example_id.name, perk.item_example.desc</param>
+    /// <param name="text">The localized text to be displayed.</param>
+    public static void AddLocalizationToAllDictionaries(string fullyQualifiedKey, string text)
+    {
+        LocalizationHelper.AddLocToAllDictionaries(fullyQualifiedKey, text);
+    }
+
+    #endregion
 }

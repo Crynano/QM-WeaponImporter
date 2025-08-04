@@ -14,5 +14,18 @@ namespace QM_WeaponImporter.Services
             Logger.LogInfo($"Creating file {filePath}");
             File.WriteAllText(filePath, content);
         }
+
+        public static string ReadFile(string filePath)
+        {
+            if (File.Exists(filePath))
+            {
+                return File.ReadAllText(filePath);
+            }
+            else
+            {
+                Logger.LogWarning($"\"{filePath}\" does not exist. Could not read.");
+                return null;
+            }
+        }
     }
 }

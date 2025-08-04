@@ -5,5 +5,5 @@ namespace QM_WeaponImporter.Templates;
 public abstract class BasePickupItemRecordTemplate : ConfigTableRecordTemplate
 {
     [JsonProperty(Order = 2)]
-    public int inventorySortOrder { get; set; } = 100;
+    public int InventorySortOrder { get; set; } = 100;
 }

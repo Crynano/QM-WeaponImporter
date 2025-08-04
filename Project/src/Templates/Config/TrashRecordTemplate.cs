@@ -13,6 +13,6 @@ public class TrashRecordTemplate : ItemRecordTemplate
 
     public static TrashRecordTemplate GetExample()
     {
-        return new TrashRecordTemplate() { id = "example_trash", itemClass = ItemClass.Parts };
+        return new TrashRecordTemplate() { Id = "example_trash", ItemClass = ItemClass.Parts };
     }
 }

@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 
-namespace QM_WeaponImporter
+namespace QM_WeaponImporter.Templates
 {
     [Serializable]
     public class ConfigTemplate
@@ -12,6 +10,12 @@ namespace QM_WeaponImporter
         /// In relative pathing. (Relative to RootFolder)
         /// </summary>
         public string descriptorsPath { get; set; }
+
+        /// <summary>
+        /// Dictionary of descriptors in relative pathing.
+        /// Linked to their own custom descriptor type.
+        /// </summary>
+        public Dictionary<string, string> descriptorsPaths { get; set; }
 
         /// <summary>
         /// Path to the localization file / folder
@@ -41,6 +45,22 @@ namespace QM_WeaponImporter
             {
                 imagePixelScale = 200f,
                 descriptorsPath = "Assets/Descriptors",
+                descriptorsPaths = new Dictionary<string, string>()
+                {
+                    { "weaponsDescriptors", "Assets/Descriptors/weapons" },
+                    { "ammoDescriptors", "Assets/Descriptors/ammo" },
+                    { "firemodesDescriptors", "Assets/Descriptors/firemodes" },
+                    { "consumableDescriptors", "Assets/Descriptors/consumables" },
+                    { "trashDescriptors", "Assets/Descriptors/trash" },
+                    { "helmetsDescriptors", "Assets/Descriptors/helmets" },
+                    { "armorsDescriptors", "Assets/Descriptors/armors" },
+                    { "leggingsDescriptors", "Assets/Descriptors/leggings" },
+                    { "bootsDescriptors", "Assets/Descriptors/boots" },
+                    { "grenadesDescriptors", "Assets/Descriptors/grenades" },
+                    { "implantsDescriptors", "Assets/Descriptors/implants" },
+                    { "augmentationsDescriptors", "Assets/Descriptors/augmentations" }, 
+                    { "woundSlotsDescriptors", "Assets/Descriptors/woundSlots" },
+                },
                 localizationPaths = new Dictionary<string, string>()
                 {
                     { "item", "Assets/Localization/Items"},
@@ -48,7 +68,8 @@ namespace QM_WeaponImporter
                     { "Firemode", "Assets/Localization/Firemodes" },
                     { "faction", "Assets/Localization/Factions" },
                     { "station", "Assets/Localization/Stations" },
-                    { "alliance", "Assets/Localization/Alliances" }
+                    { "alliance", "Assets/Localization/Alliances" },
+                    { "woundslot", "Assets/Localization/WoundSlots" },
                 },
                 folderPaths = new Dictionary<string, string>
                 {
@@ -73,6 +94,9 @@ namespace QM_WeaponImporter
                     { "workbenchreceipts", "Assets/Config/workbenchreceipts" },
                     { "datadisks", "Assets/Config/datadisks" },
                     { "factionconfig", "Assets/Config/factionconfig" },
+                    { "implants", "Assets/Config/implants" },
+                    { "augmentations", "Assets/Config/augmentations" },
+                    { "woundSlots", "Assets/Config/woundSlots" },
                 }
             };
         }

@@ -1,8 +1,9 @@
 ﻿using MGSC;
 using System.Collections.Generic;
+using QM_WeaponImporter.Interfaces;
 
 namespace QM_WeaponImporter.Templates;
-public class BootsTemplate : BootsRecord
+public class BootsTemplate : BootsRecord, IOriginalCopy<BootsRecord>
 {
     public Dictionary<string, float> resistSheet = new Dictionary<string, float>();
     public BootsTemplate()
@@ -30,7 +31,6 @@ public class BootsTemplate : BootsRecord
             MaxDurability = this.MaxDurability,
             MinDurabilityAfterRepair = this.MinDurabilityAfterRepair,
             Unbreakable = this.Unbreakable,
-            RepairCategory = this.RepairCategory,
             Categories = this.Categories,
             TechLevel = this.TechLevel,
             Price = this.Price,

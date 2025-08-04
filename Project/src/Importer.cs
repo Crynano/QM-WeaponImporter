@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using QM_WeaponImporter.Templates;
 using UnityEngine;
 
 namespace QM_WeaponImporter
@@ -33,27 +34,33 @@ namespace QM_WeaponImporter
 
         private static SpriteImporter SpriteImporter = new SpriteImporter();
 
-        public static Sprite LoadNewSprite(string path)
+        public static Sprite LoadNewSprite(string path, bool returnDefault = true)
         {
-            string finalPath = Path.Combine(DataParser.rootFolder, path);
-            return SpriteImporter.Import(finalPath, Vector2.zero, ImagePixelScaling);
+            string finalPath = Path.Combine(DataParser.RootFolder, path);
+            return SpriteImporter.Import(finalPath, Vector2.zero, ImagePixelScaling, returnDefault);
         }
 
         public static Sprite LoadCenteredSprite(string path)
         {
-            string finalPath = Path.Combine(DataParser.rootFolder, path);
+            string finalPath = Path.Combine(DataParser.RootFolder, path);
             return SpriteImporter.Import(finalPath, new Vector2(0.5f, 0f), 100f);
         }
 
-        public static T? LoadFileFromBundle<T>(string bundlePath, string fileName) where T : class
+        public static T LoadFileFromBundle<T>(string bundlePath, string fileName) where T : class
         {
             if(string.IsNullOrEmpty(fileName))
             {
-                Logger.LogWarning($"Bundle fileName was empty or null");
+                Logger.LogWarning($"fileName was empty or null");
                 return null;
             }
 
-            var completePath = Path.Combine(DataParser.rootFolder, bundlePath);
+            if (string.IsNullOrEmpty(bundlePath))
+            {
+                Logger.LogWarning($"bundlePath was empty or null");
+                return null;
+            }
+
+            var completePath = Path.Combine(DataParser.RootFolder, bundlePath);
 
             if (!File.Exists(completePath)) 
             { 
@@ -105,7 +112,7 @@ namespace QM_WeaponImporter
                 Logger.LogWarning($"Path was null when importing an audio file");
                 return null;
             }
-            string finalPath = Path.Combine(DataParser.rootFolder, relativePath);
+            string finalPath = Path.Combine(DataParser.RootFolder, relativePath);
             if (!File.Exists(finalPath))
             {
                 //throw new NullReferenceException($"Audio at {finalPath} does not exist.");

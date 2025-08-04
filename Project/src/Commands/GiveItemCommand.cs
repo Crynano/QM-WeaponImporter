@@ -9,18 +9,18 @@ namespace QM_WeaponImporter;
 [ConsoleCommand(new string[] { "give" })]
 public class GiveItemCommand
 {
-    [Inject(false)]
-    private readonly MagnumCargo _magnumCargo;
+    [Inject(false)] private readonly MagnumCargo _magnumCargo;
 
-    [Inject(false, AllowNull = true)]
-    private readonly Creatures _creatures;
+    [Inject(false, AllowNull = true)] private readonly MapGrid _mapGrid;
 
-    [Inject(false, AllowNull = true)]
-    private readonly ItemsOnFloor _itemsOnFloor;
+    [Inject(false, AllowNull = true)] private readonly Creatures _creatures;
+
+    [Inject(false, AllowNull = true)] private readonly ItemsOnFloor _itemsOnFloor;
 
     public static string Help(string command, bool verbose)
     {
-        return "Spawn X items on the floor or in ship cargo. Default amount is 1.\nSyntax: give <itemId> <itemAmount>.\nPress TAB to autocomplete.";
+        return
+            "Spawn X items on the floor or in ship cargo. Default amount is 1.\nSyntax: give <itemId> <itemAmount> <cargoStorageIndex>.\nPress TAB to autocomplete.";
     }
 
     public string Execute(string[] tokens)
@@ -28,15 +28,30 @@ public class GiveItemCommand
         try
         {
             int amountOfItems = 1;
-            if (tokens.Length > 1)
+            int cargoStorage = 0;
+
+            // If user wants more than one, specify
+            if (tokens.Length > 2)
             {
-                // If user wants more than one, specify
-                if (int.TryParse(tokens[1], out int newAmount))
+                string amountToken = tokens[2] ?? "1";
+                if (int.TryParse(amountToken, out int amountOfItemsParsed))
                 {
-                    if (newAmount < 1) return "ERROR: Please introduce a valid amount of items.";
-                    amountOfItems = newAmount;
+                    amountOfItems = Mathf.Clamp(amountOfItemsParsed, 1, 9999);
                 }
             }
+
+            if (tokens.Length > 3)
+            {
+                string cargoToken = tokens[3] ?? "1";
+                // If user wants more than one, specify
+                if (int.TryParse(cargoToken, out int cargoStorageParsed))
+                {
+                    cargoStorage = Mathf.Clamp(cargoStorageParsed - 1, 0, 7);
+                }
+            }
+            
+            bool cargoFlag = SingletonMonoBehaviour<DungeonGameMode>.Instance == null;
+            
             for (int i = 0; i < amountOfItems; i++)
             {
                 BasePickupItem basePickupItem = SingletonMonoBehaviour<ItemFactory>.Instance.CreateForInventory(tokens[0]);
@@ -46,22 +61,30 @@ public class GiveItemCommand
                     DatadiskRecord datadiskRecord = basePickupItem.Record<DatadiskRecord>();
                     datadiskComponent.SetUnlockId(datadiskRecord.UnlockIds[UnityEngine.Random.Range(0, datadiskRecord.UnlockIds.Count)]);
                 }
-                if (SingletonMonoBehaviour<DungeonGameMode>.Instance == null)
+                
+                if (cargoFlag)
                 {
-                    _magnumCargo.ShipCargo[0].AddItemAndReshuffleOptional(basePickupItem);
+                    _magnumCargo.ShipCargo[cargoStorage].AddItemAndReshuffleOptional(basePickupItem);
                 }
                 else
                 {
                     Player player = _creatures.Player;
-                    ItemOnFloorSystem.SpawnItem(_itemsOnFloor, basePickupItem, player.CreatureData.Position);
+                    ItemOnFloorSystem.SpawnItem(_itemsOnFloor, _mapGrid, basePickupItem, player.CreatureData.Position);
                 }
             }
-            return amountOfItems == 1 ? "Added item!" : $"Added {amountOfItems} items!" ;
+
+            if (UI.IsShowing<ArsenalScreen>())
+            {
+                UI.Get<ArsenalScreen>().RefreshView();
+            }
+
+            return (amountOfItems == 1 ? $"Added item" : $"Added {amountOfItems} items") +
+                   (cargoFlag ? $" to cargo {cargoStorage + 1}" : " to the ground!");
         }
         catch (NullReferenceException exception)
         {
-            string msg = $"ERROR: Item with ID \"{tokens[0]}\" not found";
-            Debug.Log(msg);
+            string msg = $"<color=red>ERROR:</color> Coudn't add \"{tokens[0]}\".";
+            Debug.LogError(exception.Message);
             return msg;
         }
     }
@@ -70,18 +93,20 @@ public class GiveItemCommand
     {
         string enteredText = ((tokens.Length != 0) ? tokens[0] : "");
         //UI.Get<DevConsole>().Daemon.CommandList.Where((string name) => name.StartsWith(enteredText)).ToList();
-        List<string> list = Data.Items.Ids.Where((string name) => name.StartsWith(enteredText)).ToList();
-        if (list == null || list.Count == 0)
+        List<string> list = Data.Items.Ids.Where((string name) => name.Contains(enteredText)).ToList();
+        if (list.Count == 0)
         {
             return null;
         }
+
         List<string> list2 = new List<string>();
         foreach (string item in list)
         {
             // Also add its localization name.
-            string locName = Localization.Get("item." + item + ".name").FirstLetterToUpperCase() ?? "missing name";
-            list2.Add(command + " " + item + $" ({locName})");
+            string locName = Localization.Get("item." + item + ".name").FirstLetterToUpperCase() ?? "???";
+            list2.Add($"{command} {item} \"{locName}\"");
         }
+
         return list2;
     }
 

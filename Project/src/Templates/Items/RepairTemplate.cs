@@ -7,10 +7,10 @@ internal class RepairTemplate : MGSC.RepairRecord
     {
         MGSC.RepairRecord example = new MGSC.RepairRecord()
         {
-            RepairCategories = new List<string>()
-            {
-                "all"
-            }
+            RepairSpecialRule = MGSC.RepairSpecialRule.All,
+            RestoreAmount = 1,
+            MaxStack = 1,
+            MaxCapacity = 1,
         };
         return example;
     }

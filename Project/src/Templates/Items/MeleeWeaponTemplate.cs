@@ -6,27 +6,14 @@ namespace QM_WeaponImporter
     [Serializable]
     public class MeleeWeaponTemplate : WeaponTemplate
     {
-        /// <summary>
-        /// Melee basic properties
-        /// </summary>
-        public bool isMelee { get; set; }
-        public bool doesMeleeSplash { get; set; }
-        /// <summary>
-        /// Throw properties
-        /// </summary>
-        public bool canThrow { get; set; }
-        public int throwRange { get; set; }
-        public bool throwGuaranteedHit { get; set; }
-        public bool doesThrowPierce { get; set; }
+        public bool IsMelee { get; set; }
+        public int ThrowRange { get; set; }
         public int durabilityLossOnThrow { get; set; }
-        /// <summary>
-        /// Other melee properties
-        /// </summary>
         public bool canMeleeAmputate { get; set; }
-        
+        public bool GetMeleeDamageFromCreature { get; set; }
         public MeleeWeaponTemplate()
         {
-            isMelee = true;
+            IsMelee = true;
             range = 1;
         }
 
@@ -34,15 +21,15 @@ namespace QM_WeaponImporter
         {
             MeleeWeaponTemplate meleeWeapon = new MeleeWeaponTemplate()
             {
-                id = "melee_weapon",
-                price = 100,
-                weight = 0.7f,
-                inventoryWidthSize = 2,
+                Id = "melee_weapon",
+                Price = 100,
+                Weight = 0.7f,
+                InventoryWidthSize = 2,
                 weaponClass = MGSC.WeaponClass.Blade,
                 weaponSubClass = MGSC.WeaponSubClass.Default,
                 grip = MGSC.HandsGrip.MeleeOneHanded,
                 requiredAmmo = "",
-                overrideAmmo = "",
+                overrideAmmo = new List<string>(),
                 defaultAmmoId = "implicted_combat_knife",
                 bonusAccuracy = 0.1f,
                 minimumDamage = 12,
@@ -51,24 +38,14 @@ namespace QM_WeaponImporter
                 criticalDamage = 2f,
                 firemodes = new List<string>() { "knife_single", "knife_triple" },
                 magazineCapacity = 0,
-                reloadOneBulletAtATime = false,
                 reloadDuration = 1,
-                maxDurability = 90,
+                MaxDurability = 90,
                 durabilityLossOnThrow = 1,
-                minDurabilityAfterRepair = 0,
-                unbreakable = false,
-                repairCategory = "pierce_melee",
-                doesMeleeSplash = false,
-                canThrow = true,
-                throwRange = 5,
-                throwGuaranteedHit = false,
-                doesThrowPierce = false,
+                MinDurabilityAfterRepair = 0,
+                Unbreakable = false,
+                ThrowRange = 5,
                 canMeleeAmputate = true,
-                amputationOnWound = false,
-                range = 1,
-                critPainDamageMultiplier = 1f,
-                painDamageMultiplier = 1f,
-                fovLookAngleMult = 1f
+                range = 1
             };
             return meleeWeapon;
         }

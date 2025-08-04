@@ -1,40 +1,24 @@
 using MGSC;
-using System.Collections.Generic;
 using UnityEngine;
 
-namespace QM_WeaponImporter.Templates;
-public class CustomItemContentDescriptor
+namespace QM_WeaponImporter.Templates
 {
-    public CustomItemContentDescriptor() { }
-    public string attachedId { get; set; } = string.Empty;
-    public string baseItemId { get; set; } = string.Empty;
-    public string overridenRenderId { get; set; } = string.Empty;
-    public string iconSpritePath { get; set; } = string.Empty;
-    public string smallIconSpritePath { get; set; } = string.Empty;
-    public string shadowOnFloorSpritePath { get; set; } = string.Empty;
-    public string shootSoundPath { get; set; } = string.Empty;
-    public string dryShotSoundPath { get; set; } = string.Empty;
-    public string failedAttackSoundPath { get; set; } = string.Empty;
-    public string reloadSoundPath { get; set; } = string.Empty;
-    public string bundlePath { get; set; } = string.Empty;
-    public string prefabName { get; set; } = string.Empty;
-    public float scaleValue { get; set; } = 0.06f;
-    public string textureName {  get; set; } = string.Empty;
-    public string bulletName { get; set; } = string.Empty;
-    public string muzzleName { get; set; } = string.Empty;
-
-    public Dictionary<string, string[]> customParameters = new Dictionary<string, string[]>()
+    public class CustomItemContentDescriptor : CustomBaseDescriptor
     {
-        
-    };
+        public CustomItemContentDescriptor() : base() { }
 
-    public virtual T GetOriginal<T>() where T : ItemContentDescriptor
-    {
-        T defaultReturn = ScriptableObject.CreateInstance<T>();
-        defaultReturn._overridenRenderId = overridenRenderId;
-        defaultReturn._icon = Importer.LoadNewSprite(iconSpritePath);
-        defaultReturn._smallIcon = Importer.LoadNewSprite(iconSpritePath);
-        defaultReturn._shadow = Importer.LoadNewSprite(iconSpritePath);
-        return defaultReturn;
+        public string iconSpritePath { get; set; } = string.Empty;
+        public string smallIconSpritePath { get; set; } = string.Empty;
+        public string shadowOnFloorSpritePath { get; set; } = string.Empty;
+
+        public T GetOriginal<T>() where T : ItemContentDescriptor
+        {
+            T defaultReturn = ScriptableObject.CreateInstance<T>();
+            defaultReturn._overridenRenderId = overridenRenderId;
+            defaultReturn._icon = ItemCreatorHelper.GetPropertyFromItem<AmmoDescriptor>(iconSpritePath, "Icon") as Sprite ?? Importer.LoadNewSprite(iconSpritePath);
+            defaultReturn._smallIcon = ItemCreatorHelper.GetPropertyFromItem<AmmoDescriptor>(smallIconSpritePath, "SmallIcon") as Sprite ?? Importer.LoadNewSprite(smallIconSpritePath);
+            defaultReturn._shadow = ItemCreatorHelper.GetPropertyFromItem<AmmoDescriptor>(shadowOnFloorSpritePath, "ShadowOnFloor") as Sprite ?? Importer.LoadNewSprite(shadowOnFloorSpritePath);
+            return defaultReturn;
+        }
     }
 }

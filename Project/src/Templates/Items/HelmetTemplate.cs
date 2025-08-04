@@ -1,8 +1,9 @@
 ﻿using MGSC;
 using System.Collections.Generic;
+using QM_WeaponImporter.Interfaces;
 
 namespace QM_WeaponImporter.Templates;
-public class HelmetTemplate : HelmetRecord
+public class HelmetTemplate : HelmetRecord, IOriginalCopy<HelmetRecord>
 {
     public Dictionary<string, float> resistSheet = new Dictionary<string, float>();
     public HelmetTemplate()
@@ -30,7 +31,6 @@ public class HelmetTemplate : HelmetRecord
             MaxDurability = this.MaxDurability,
             MinDurabilityAfterRepair = this.MinDurabilityAfterRepair,
             Unbreakable = this.Unbreakable,
-            RepairCategory = this.RepairCategory,
             Categories = this.Categories,
             TechLevel = this.TechLevel,
             Price = this.Price,

@@ -6,7 +6,7 @@ namespace QM_WeaponImporter.Services;
 internal class TextureImporter
 {
     private static string defaultTexture = "iVBORw0KGgoAAAANSUhEUgAAACwAAAAsCAIAAACR5s1WAAAAaklEQVRYCe3WsRFAQABFQac7PVAdPWhPtA04geBJnuSMWT8wzu1a5q7j3ucesKyT5z853ktgTCIJAtomkiCgbSIJAtomkiCgbYLEcPO+8//rfQ76SSRBQNtEEgS0TSRBQNtEEgS0TfxK4gGfNATn17aOOAAAAABJRU5ErkJggg==";
-    public Texture2D Import(string FilePath)
+    public Texture2D Import(string FilePath, bool returnDefault = true)
     {
         Texture2D Tex2D = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
         Tex2D.filterMode = FilterMode.Point;
@@ -23,7 +23,8 @@ internal class TextureImporter
             catch (Exception e)
             {
                 Logger.LogWarning($"Could not load image from {FilePath}. Error: {e.Message}");
-                ImageConversion.LoadImage(Tex2D, Convert.FromBase64String(defaultTexture));
+                if (returnDefault)
+                    ImageConversion.LoadImage(Tex2D, Convert.FromBase64String(defaultTexture));
             }
         }
         else

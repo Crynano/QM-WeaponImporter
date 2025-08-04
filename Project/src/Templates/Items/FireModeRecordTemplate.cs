@@ -4,8 +4,6 @@ namespace QM_WeaponImporter.Templates
 {
     public class FireModeRecordTemplate : ConfigTableRecordTemplate
     {
-        public string FireModeSpritePath { get; set; } = string.Empty;
-
         public int AmmoPerShot { get; set; } = 1;
 
         public int WeaponCastsCount { get; set; } = 1;
@@ -24,13 +22,12 @@ namespace QM_WeaponImporter.Templates
         {
             return new FireModeRecordTemplate()
             {
-                id = "example_id",
+                Id = "example_id",
                 Accuracy = 1.0f,
                 DamageMult = 1.0f,
                 AmmoPerShot = 0,
                 ScatterAngle = 0.1f,
                 WeaponCastsCount = 0,
-                FireModeSpritePath = "Assets/Sprites/sprite.png",
                 RequiredAllAmmoToShot = false,
                 DelayInSecsBetweenShots = 0.1f,
             };
@@ -40,7 +37,7 @@ namespace QM_WeaponImporter.Templates
         {
             return new FireModeRecord()
             {
-                Id = this.id,
+                Id = this.Id,
                 Accuracy = this.Accuracy,
                 DamageMult= this.DamageMult,
                 AmmoPerShot = this.AmmoPerShot,

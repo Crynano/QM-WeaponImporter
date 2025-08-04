@@ -30,7 +30,6 @@ public class LeggingsTemplate : LeggingsRecord
             MaxDurability = this.MaxDurability,
             MinDurabilityAfterRepair = this.MinDurabilityAfterRepair,
             Unbreakable = this.Unbreakable,
-            RepairCategory = this.RepairCategory,
             Categories = this.Categories,
             TechLevel = this.TechLevel,
             Price = this.Price,

@@ -1,8 +1,9 @@
 ﻿using MGSC;
 using System.Collections.Generic;
+using QM_WeaponImporter.Interfaces;
 
 namespace QM_WeaponImporter.Templates;
-public class VestTemplate : VestRecord
+public class VestTemplate : VestRecord, IOriginalCopy<VestRecord>
 {
     public Dictionary<string, float> resistSheet = new Dictionary<string, float>();
     public VestTemplate() 
@@ -25,13 +26,13 @@ public class VestTemplate : VestRecord
         VestRecord original = new VestRecord()
         {
             SlotCapacity  =this.SlotCapacity,
-            ReloadTurnBonus = this.ReloadTurnBonus,
+            ReloadTurnMod = this.ReloadTurnMod,
             DropChanceOnBroken = this.DropChanceOnBroken,
             ResistSheet = this.ResistSheet,
             MaxDurability = this.MaxDurability,
             MinDurabilityAfterRepair = this.MinDurabilityAfterRepair,
             Unbreakable = this.Unbreakable,
-            RepairCategory = this.RepairCategory,
+            RepairItemIds = this.RepairItemIds,
             Categories = this.Categories,
             TechLevel = this.TechLevel,
             Price = this.Price,

@@ -1,10 +1,13 @@
 using MGSC;
 using Newtonsoft.Json;
+using QM_WeaponImporter.Services;
 using QM_WeaponImporter.Templates;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using QM_WeaponImporter.Interfaces;
 using UnityEngine;
 
 namespace QM_WeaponImporter
@@ -17,17 +20,17 @@ namespace QM_WeaponImporter
     // We can assume it wont be needed but yeah.
     internal static class DataParser
     {
-        public static string rootFolder;
+        public static string RootFolder;
 
-        private static List<IConfigParser> Parsers = new List<IConfigParser>();
+        private static List<IConfigParser> _parsers = new List<IConfigParser>();
 
         // How about we load descriptors first?
-        private static List<CustomItemContentDescriptor> itemDescriptors = new List<CustomItemContentDescriptor>();
+        private static List<CustomBaseDescriptor> _itemDescriptors = new List<CustomBaseDescriptor>();
 
         private static void LoadDescriptors(ConfigTemplate userConfig)
         {
-            //Logger.LogInfo($"Loading descriptors");
-            Parsers.Add(new TemplateParser<CustomItemContentDescriptor>("descriptorsPath", itemDescriptors.Add));
+            // Old implementation, keep for retrocompatiblity
+            _parsers.Add(new TemplateParser<CustomWeaponDescriptor>("descriptorsPath", _itemDescriptors.Add));
             KeyValuePair<string, string> descriptorsEntry = new KeyValuePair<string, string>("descriptorsPath", userConfig.descriptorsPath);
             if (!ParseFile(descriptorsEntry))
             {
@@ -35,61 +38,114 @@ namespace QM_WeaponImporter
                 Logger.LogError($"Interrupting Mod Load: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
                 throw new NullReferenceException($"Critical error: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
             }
+
+            // Now that we have a list, we can go through it.
+            // Add all parsers for custom content descriptors.
+            // Weapons
+            _parsers.Add(new TemplateParser<CustomWeaponDescriptor>("weaponsDescriptors", _itemDescriptors.Add));
+            _parsers.Add(new TemplateParser<CustomAmmoDescriptor>("ammoDescriptors", _itemDescriptors.Add));
+            
+            // Consumables
+            _parsers.Add(new TemplateParser<CustomConsumableDescriptor>("consumableDescriptors", _itemDescriptors.Add));
+            _parsers.Add(new TemplateParser<CustomItemContentDescriptor>("trashDescriptors", _itemDescriptors.Add));
+            
+            // Datadisks
+            _parsers.Add(new TemplateParser<CustomItemContentDescriptor>("datadiskDescriptors", _itemDescriptors.Add));
+            
+            // Armor Sets
+            _parsers.Add(new TemplateParser<CustomItemContentDescriptor>("helmetsDescriptors", _itemDescriptors.Add));
+            _parsers.Add(new TemplateParser<CustomItemContentDescriptor>("armorsDescriptors", _itemDescriptors.Add));
+            _parsers.Add(new TemplateParser<CustomItemContentDescriptor>("leggingsDescriptors", _itemDescriptors.Add));
+            _parsers.Add(new TemplateParser<CustomItemContentDescriptor>("bootsDescriptors", _itemDescriptors.Add));
+            
+            // Boom
+            _parsers.Add(new TemplateParser<CustomItemContentDescriptor>("grenadesDescriptors", _itemDescriptors.Add));
+            
+            // Augments and WoundSlots
+            _parsers.Add(new TemplateParser<CustomItemContentDescriptor>("augmentationsDescriptors", _itemDescriptors.Add));
+            _parsers.Add(new TemplateParser<CustomWoundSlotDescriptor>("woundSlotsDescriptors", _itemDescriptors.Add));
+            _parsers.Add(new TemplateParser<CustomImplantDescriptor>("implantsDescriptors", _itemDescriptors.Add));
+            
+            // Firemodes
+            _parsers.Add(new TemplateParser<CustomFireModeDescriptor>("firemodesDescriptors", delegate (CustomFireModeDescriptor fireModeDesc)
+            {
+                Logger.LogDebug($"Adding custom firemode descriptor with ID: \"{fireModeDesc.attachedId}\"");
+                _itemDescriptors.Add(fireModeDesc);
+            }));
+            
+            try
+            {
+                var descDictionary = userConfig.descriptorsPaths;
+                var orderedDic = descDictionary.OrderBy(x => GetDescriptorsOrder().FindIndex(y => x.Key.Contains(y.ToLower())));
+                Logger.LogDebug($"Printing ordered dictionary!");
+                foreach (var singleDescriptorDictionary in orderedDic)
+                {
+                    Logger.LogDebug(singleDescriptorDictionary.Key);
+                    Logger.LogDebug($"Trying to load new method descriptor at {singleDescriptorDictionary}");
+                    if (!ParseFile(singleDescriptorDictionary)) continue;
+                }
+            }
+            catch (NullReferenceException ex)
+            {
+                Logger.LogError($"Descriptors dictionary missing in {Importer.GlobalConfigName} file. Some weapons might not load at all or prevent the mod from loading. Please check the following example files and ensure that \"global_config.json\" file contains the \"descriptorsPaths\" properties.");
+                //ExamplesManager.CreateExampleFiles(RootFolder);
+            }
         }
 
         private static void LoadDefaultParsers()
         {
-            // We can just copy the code they used xD.
-            // TODO -- port this to the ImportParser
-            // ------- eliminate MeleeWeaponTemplate
-            Parsers.Add(new NullableRecordParser<AmmoRecord>("ammo", delegate (AmmoRecord ammoItem)
+            _parsers.Add(new NullableRecordParser<ItemTraitRecordTemplate>("trait", delegate (ItemTraitRecordTemplate itemTraitRecord)
             {
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(ammoItem.Id);
-                Data.Descriptors.TryGetValue("ammo", out DescriptorsCollection ammoDescriptors);
-                AmmoDescriptor baseAmmo = ammoDescriptors.GetDescriptor(customItemDescriptor.baseItemId) as AmmoDescriptor;
-                ItemContentDescriptor originalDescriptor = customItemDescriptor.GetOriginal<ItemContentDescriptor>();
-                AmmoDescriptor ammoContentDescriptor = new AmmoDescriptor();
-                if (baseAmmo != null)
-                {
-                    ammoContentDescriptor._bullet = baseAmmo._bullet;
-                    ammoContentDescriptor._meleeMakeBloodDecal = baseAmmo._meleeMakeBloodDecal;
-                    ammoContentDescriptor._gibs = baseAmmo._gibs;
-                }
-                // Use base icons if user provided no icons.
-                ammoContentDescriptor._icon = originalDescriptor._icon == null && baseAmmo != null ? baseAmmo._icon : originalDescriptor._icon;
-                ammoContentDescriptor._smallIcon = originalDescriptor._smallIcon == null && baseAmmo != null ? baseAmmo._smallIcon : originalDescriptor._smallIcon;
-                ammoContentDescriptor._shadow = originalDescriptor._shadow == null && baseAmmo != null ? baseAmmo._shadow : originalDescriptor._icon;
-                ammoItem.ContentDescriptor = ammoContentDescriptor;
-                AddItemToGame(ammoItem);
+                // Works outta the box?
+                ItemTraitRecord realRecord = itemTraitRecord.GetOriginal();
+                AddTraitToGame(realRecord);
             }));
-            Parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
+            _parsers.Add(new NullableRecordParser<WoundSlotRecord>("woundSlots", delegate (WoundSlotRecord item)
             {
-                Logger.SetContext(weaponTemplate.id);
-                GameItemCreator.CreateWeapon(weaponTemplate, GetDescriptor(weaponTemplate.id));
+                WoundSlotDescriptor itemContentDescriptor = GetDescriptor<CustomWoundSlotDescriptor>(item.Id).GetOriginal();
+                item.ContentDescriptor = itemContentDescriptor;
+                MGSC.Data.WoundSlots.AddRecord(item.Id, item);
+            }));
+            _parsers.Add(new NullableRecordParser<AugmentationRecordTemplate>("augmentations", delegate (AugmentationRecordTemplate item)
+            {
+                ItemContentDescriptor itemContentDescriptor = GetDescriptor<CustomItemContentDescriptor>(item.Id).GetOriginal<ItemContentDescriptor>();
+                var original = item.GetOriginal();
+                original.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(original, "augmentations");
+            }));
+            _parsers.Add(new NullableRecordParser<ImplantRecord>("implants", delegate (ImplantRecord item)
+            {
+                ImplantDescriptor itemContentDescriptor = GetDescriptor<CustomImplantDescriptor>(item.Id).GetOriginal();
+                item.ContentDescriptor = itemContentDescriptor;
+                AddItemToGame(item, "implants");
+            }));
+            _parsers.Add(new NullableRecordParser<AmmoRecordTemplate>("ammo", delegate (AmmoRecordTemplate ammoItem)
+            {
+                AmmoRecord ammoRecord = ammoItem.GetOriginal();
+                AmmoDescriptor ammoDesc = GetDescriptor<CustomAmmoDescriptor>(ammoItem.Id).GetOriginal<AmmoDescriptor>();
+                ammoRecord.ContentDescriptor = ammoDesc;
+                AddItemToGame(ammoRecord, "ammo");
+            }));
+            _parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
+            {
+                Logger.SetContext(weaponTemplate.Id);
+                ItemCreatorHelper.CreateWeapon(weaponTemplate, GetDescriptor<CustomWeaponDescriptor>(weaponTemplate.Id));
             }));
             // TODO -- port this to the ImportParser
             // ------- eliminate RangedWeaponTemplate
-            Parsers.Add(new TemplateParser<RangedWeaponTemplate>("rangedweapons", delegate (RangedWeaponTemplate weaponTemplate)
+            _parsers.Add(new TemplateParser<RangedWeaponTemplate>("rangedweapons", delegate (RangedWeaponTemplate weaponTemplate)
             {
-                Logger.SetContext(weaponTemplate.id);
-                GameItemCreator.CreateWeapon(weaponTemplate, GetDescriptor(weaponTemplate.id));
+                Logger.SetContext(weaponTemplate.Id);
+                ItemCreatorHelper.CreateWeapon(weaponTemplate, GetDescriptor<CustomWeaponDescriptor>(weaponTemplate.Id));
             }));
-            Parsers.Add(new ImportParser<ItemTransformationRecord>("itemtransforms", delegate (ItemTransformationRecord itemTransformRecord)
-            {
-                AddItemTransform(itemTransformRecord);
-                //MGSC.Data.ItemTransformation.AddRecord(itemTransformRecord.Id, itemTransformRecord);
-            }));
-            Parsers.Add(new ImportParser<ItemProduceReceipt>("itemreceipts", delegate (ItemProduceReceipt itemProduceReceiptRecord)
-            {
-                AddProduceReceipt(itemProduceReceiptRecord);
-                //MGSC.Data.ProduceReceipts.Add(itemProduceReceiptRecord);
-            }));
-            Parsers.Add(new ImportParser<WorkbenchReceiptRecord>("workbenchreceipts", delegate (WorkbenchReceiptRecord itemWorkbenchReceiptRecord)
+            _parsers.Add(new ImportParser<ItemTransformationRecord>("itemtransforms", AddItemTransform));
+            _parsers.Add(new ImportParser<ItemProduceReceipt>("itemreceipts", AddProduceReceipt));
+            _parsers.Add(new ImportParser<WorkbenchReceiptRecord>("workbenchreceipts", delegate (WorkbenchReceiptRecord itemWorkbenchReceiptRecord)
             {
                 MGSC.Data.WorkbenchReceipts.Add(itemWorkbenchReceiptRecord);
                 itemWorkbenchReceiptRecord.GenerateId();
             }));
-            Parsers.Add(new NullableRecordParser<DatadiskRecordTemplate>("datadisks", delegate (DatadiskRecordTemplate datadiskRecord)
+            _parsers.Add(new NullableRecordParser<DatadiskRecordTemplate>("datadisks", delegate (DatadiskRecordTemplate datadiskRecord)
             {
                 CompositeItemRecord itemRecord = (CompositeItemRecord)MGSC.Data.Items.GetRecord(datadiskRecord.Id);
                 if (itemRecord != null) // Append to existing chip if already exists
@@ -99,90 +155,86 @@ namespace QM_WeaponImporter
                 }
                 else // Create new chip if doesn't exist
                 {
-                    Logger.LogWarning($"Creating new datachips not implemented. Chip id {datadiskRecord.Id}");
-                    // TODO -- new chips have a descriptor attached, not sure how to do this yet
-                    //MGSC.Data.Items.AddRecord(datadiskRecord.Id, datadiskRecord);
-                    //datadiskRecord.ContentDescriptor = descs.GetDescriptor(datadiskRecord.Id);
+                    ItemContentDescriptor descriptor = GetDescriptor<CustomItemContentDescriptor>(datadiskRecord.Id).GetOriginal<ItemContentDescriptor>();
+                    DatadiskRecord diskRecord = datadiskRecord.GetOriginal();
+                    diskRecord.ContentDescriptor = descriptor;
+                    AddItemToGame(diskRecord, "datadisks");
                 }
             }));
-            Parsers.Add(new NullableRecordParser<FactionTemplate>("factionconfig", GameItemCreator.AddItemsToFactions));
-            Parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
+            _parsers.Add(new NullableRecordParser<FactionTemplate>("factionconfig", ItemCreatorHelper.AddItemsToFactions));
+            _parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
             {
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(backpackItem.Id);
-                ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ItemContentDescriptor>();
-                /// Here we determine which values are needed for the backpack.
-                /// It won't magically just become an item, sadly.
+                ItemContentDescriptor itemContentDescriptor = GetDescriptor<CustomItemContentDescriptor>(backpackItem.Id).GetOriginal<ItemContentDescriptor>();
                 backpackItem.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(backpackItem);
+                AddItemToGame(backpackItem, "backpacks");
             }));
-            //Parsers.Add(new NullableRecordParser<ConsumableRecord>("medkits", delegate (MedkitRecord item)
-            //{
-            //    CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
-            //    ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ConsumableDescriptor>();
-            //    item.ContentDescriptor = itemContentDescriptor;
-            //    AddItemToGame(item);
-            //}));
-            Parsers.Add(new NullableRecordParser<ConsumableRecord>("consumables", delegate (ConsumableRecord item)
+            _parsers.Add(new NullableRecordParser<ConsumableRecord>("consumables", delegate (ConsumableRecord item)
             {
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
-                ConsumableDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ConsumableDescriptor>();
-                itemContentDescriptor._useSound = Importer.ImportAudio(ExtractCustomParameter(customItemDescriptor.customParameters, "UseEatSound"));
-                item.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(item);
+                // TODO CHECK IF NEW METHOD WORKS
+                //var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(item.Id);
+                //ConsumableDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ConsumableDescriptor>();
+                //itemContentDescriptor._useSound = Importer.ImportAudio(ExtractCustomParameter(customItemDescriptor.customParameters, "UseEatSound"));
+                //item.ContentDescriptor = itemContentDescriptor;
+                // THIS BELOW IS THE NEW METHOD
+                var consumableDescriptor = GetDescriptor<CustomConsumableDescriptor>(item.Id).GetOriginal<ConsumableDescriptor>();
+                item.ContentDescriptor = consumableDescriptor;
+                AddItemToGame(item, "consumables");
             }));
-            Parsers.Add(new NullableRecordParser<VestTemplate>("vests", delegate (VestTemplate vestItem)
+            _parsers.Add(new NullableRecordParser<VestTemplate>("vests", delegate (VestTemplate vestItem)
             {
                 var gameVest = vestItem.GetOriginal();
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameVest.Id);
+                var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(gameVest.Id);
                 VestDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<VestDescriptor>();
                 gameVest.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(gameVest);
+                AddItemToGame(gameVest, "vests");
             }));
-            Parsers.Add(new NullableRecordParser<HelmetTemplate>("helmets", delegate (HelmetTemplate armorItem)
+
+            _parsers.Add(new NullableRecordParser<HelmetTemplate>("helmets", delegate (HelmetTemplate armorItem)
             {
                 var gameArmor = armorItem.GetOriginal();
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameArmor.Id);
+                var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(gameArmor.Id);
                 var itemContentDescriptor = customItemDescriptor.GetOriginal<HelmetDescriptor>();
                 gameArmor.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(gameArmor);
+                AddItemToGame(gameArmor, "helmets");
             }));
-            Parsers.Add(new NullableRecordParser<ArmorTemplate>("armors", delegate (ArmorTemplate armorItem)
+            _parsers.Add(new NullableRecordParser<ArmorTemplate>("armors", delegate (ArmorTemplate armorItem)
             {
                 var gameArmor = armorItem.GetOriginal();
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameArmor.Id);
+                var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(gameArmor.Id);
                 ArmorDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ArmorDescriptor>();
                 gameArmor.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(gameArmor);
+                AddItemToGame(gameArmor, "armors");
             }));
-            Parsers.Add(new NullableRecordParser<LeggingsTemplate>("leggings", delegate (LeggingsTemplate armorItem)
+            _parsers.Add(new NullableRecordParser<LeggingsTemplate>("leggings", delegate (LeggingsTemplate armorItem)
             {
                 var gameArmor = armorItem.GetOriginal();
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameArmor.Id);
+                var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(gameArmor.Id);
                 var itemContentDescriptor = customItemDescriptor.GetOriginal<LeggingsDescriptor>();
                 gameArmor.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(gameArmor);
+                AddItemToGame(gameArmor, "leggings");
             }));
-            Parsers.Add(new NullableRecordParser<BootsTemplate>("boots", delegate (BootsTemplate armorItem)
+            _parsers.Add(new NullableRecordParser<BootsTemplate>("boots", delegate (BootsTemplate armorItem)
             {
                 var gameArmor = armorItem.GetOriginal();
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(gameArmor.Id);
+                var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(gameArmor.Id);
                 BootsDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<BootsDescriptor>();
                 gameArmor.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(gameArmor);
+                AddItemToGame(gameArmor, "boots");
             }));
-            Parsers.Add(new NullableRecordParser<RepairRecord>("repairs", delegate (RepairRecord item)
+            _parsers.Add(new NullableRecordParser<RepairRecord>("repairs", delegate (RepairRecord item)
             {
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
-                RepairDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<RepairDescriptor>();
-                customItemDescriptor.customParameters.TryGetValue("customUseSoundPath", out string[] audioPaths);
-                if (audioPaths != null && audioPaths.Length > 0)
-                {
-                    var audioClip = Importer.ImportAudio(audioPaths[0]);
-                    if (audioClip != null)
-                        itemContentDescriptor.CustomUseSound = audioClip;
-                }
-                item.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(item);
+                throw new NotImplementedException("Repairs are not implemented");
+                // var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(item.Id);
+                // RepairDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<RepairDescriptor>();
+                // customItemDescriptor.customParameters.TryGetValue("customUseSoundPath", out string[] audioPaths);
+                // if (audioPaths != null && audioPaths.Length > 0)
+                // {
+                //     var audioClip = Importer.ImportAudio(audioPaths[0]);
+                //     if (audioClip != null)
+                //         itemContentDescriptor.CustomUseSound = audioClip;
+                // }
+                // item.ContentDescriptor = itemContentDescriptor;
+                // AddItemToGame(item);
             }));
             //Parsers.Add(new NullableRecordParser<GrenadeTemplate>("grenades", delegate (GrenadeTemplate item)
             //{
@@ -216,22 +268,30 @@ namespace QM_WeaponImporter
             //    item.ContentDescriptor = itemContentDescriptor;
             //    AddItemToGame(item);
             //}));
-            Parsers.Add(new NullableRecordParser<TrashRecord>("trash", delegate (TrashRecord item)
+            _parsers.Add(new NullableRecordParser<TrashRecord>("trash", delegate (TrashRecord item)
             {
-                CustomItemContentDescriptor customItemDescriptor = GetDescriptor(item.Id);
-                ItemContentDescriptor itemContentDescriptor = customItemDescriptor.GetOriginal<ItemContentDescriptor>();
+                ItemContentDescriptor itemContentDescriptor = GetDescriptor<CustomItemContentDescriptor>(item.Id).GetOriginal<ItemContentDescriptor>();
                 item.ContentDescriptor = itemContentDescriptor;
-                AddItemToGame(item);
+                AddItemToGame(item, "trash");
             }));
-            Parsers.Add(new NullableRecordParser<FireModeRecordTemplate>("firemodes", delegate (FireModeRecordTemplate item)
+            _parsers.Add(new NullableRecordParser<FireModeRecordTemplate>("firemodes", delegate (FireModeRecordTemplate item)
             {
                 FireModeRecord fireModeRecord = item.GetOriginal();
-                FireModeDescriptor fireModeContentDescriptor = ScriptableObject.CreateInstance<FireModeDescriptor>();
-                //Logger.LogInfo($"Adding firemode with ID: {item.id} and image at {item.FireModeSpritePath}");
-                fireModeContentDescriptor.Icon = Importer.LoadNewSprite(item.FireModeSpritePath);
-                fireModeRecord.ContentDescriptor = fireModeContentDescriptor;
-                AddFireModeToGame(fireModeRecord);
+                FireModeDescriptor fireModeDesc = GetDescriptor<CustomFireModeDescriptor>(item.Id).GetOriginal<FireModeDescriptor>();
+                fireModeRecord.ContentDescriptor = fireModeDesc;
+                AddFireModeToGame(fireModeRecord, "firemodes");
             }));
+        }
+
+        /// <summary>
+        /// Callable for any item that goes into Data.Items and is an item.
+        /// </summary>
+        internal static void ProcessItem(IOriginalCopy<ItemRecord> originalItem, string descriptorCategory)
+        {
+            var itemRecord = originalItem.GetOriginal();
+            var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(itemRecord.Id).GetOriginal<VestDescriptor>();
+            itemRecord.ContentDescriptor = customItemDescriptor;
+            AddItemToGame(itemRecord, descriptorCategory);
         }
 
         internal static bool LoadLocalization(ConfigTemplate userConfig)
@@ -243,7 +303,7 @@ namespace QM_WeaponImporter
                 {
                     try
                     {
-                        string folderPath = Path.Combine(rootFolder, filePath.Value);
+                        string folderPath = Path.Combine(RootFolder, filePath.Value);
                         if (!Directory.Exists(folderPath))
                         {
                             Logger.LogWarning($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
@@ -275,11 +335,11 @@ namespace QM_WeaponImporter
                             string key = filePath.Key; //.ToLower();
                             string nameGroup = "name";
                             string descGroup = "shortdesc";
-                            switch(key)
+                            switch (key)
                             {
-                                case "station": 
-                                    descGroup = "type"; 
-                                    GameItemCreator.AddLocalization(key, "shortname", json.name); 
+                                case "station":
+                                    descGroup = "type";
+                                    ItemCreatorHelper.AddLocalization(key, "shortname", json.name);
                                     break;
                                 case "alliance":
                                     descGroup = "subName";
@@ -288,8 +348,8 @@ namespace QM_WeaponImporter
                                     descGroup = "desc";
                                     break;
                             }
-                            GameItemCreator.AddLocalization(key, nameGroup, json.name);
-                            GameItemCreator.AddLocalization(key, descGroup, json.shortdesc);
+                            ItemCreatorHelper.AddLocalization(key, nameGroup, json.name);
+                            ItemCreatorHelper.AddLocalization(key, descGroup, json.shortdesc);
 
                             //Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
                         }
@@ -324,18 +384,18 @@ namespace QM_WeaponImporter
         internal static bool ImportConfig(ConfigTemplate userConfig, string rootPath)
         {
             DateTime now = DateTime.Now;
-            rootFolder = rootPath;
+            RootFolder = rootPath;
             // We should check the root first.
             // See if atleast has the config file...
-            if (string.IsNullOrEmpty(rootFolder))
+            if (string.IsNullOrEmpty(RootFolder))
             {
-                Logger.LogError($"Root Folder in global config file is empty.");
+                Logger.LogError($"Root Folder is empty.");
                 return false;
             }
 
-            if (!Directory.Exists(rootFolder))
+            if (!Directory.Exists(RootFolder))
             {
-                Logger.LogError($"Root Folder \"{rootFolder}\" does not exist.");
+                Logger.LogError($"Root Folder \"{RootFolder}\" does not exist.");
                 return false;
             }
 
@@ -347,8 +407,11 @@ namespace QM_WeaponImporter
             try
             {
                 LoadLocalization(userConfig);
-                foreach (var path in userConfig.folderPaths)
+                //TODO Check it works?
+                var orderedFolders = OrderByType(userConfig.folderPaths);
+                foreach (var path in orderedFolders)
                 {
+                    Logger.LogDebug($"Trying ordered folders! \"{path.Key}\" and \"{path.Value}\"");
                     if (!ParseFile(path)) continue;
                 }
                 return true;
@@ -356,27 +419,27 @@ namespace QM_WeaponImporter
             catch (Exception e)
             {
                 Logger.LogError($"Configuration failed for {rootPath}.\n{e.Message}\n{e.StackTrace}");
-                return false;
             }
             finally
             {
                 Logger.LogInfo($"Import process took {(DateTime.Now - now).TotalSeconds:0.00} seconds.");
             }
+            return false;
         }
 
 
         private static bool ParseFile(KeyValuePair<string, string> relativeFolderPath)
         {
-            string folderPath = Path.Combine(rootFolder, relativeFolderPath.Value);
+            string folderPath = Path.Combine(RootFolder, relativeFolderPath.Value);
             if (!Directory.Exists(folderPath))
             {
                 Logger.LogWarning($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
                 return false;
             }
-            var foundParser = Parsers.Find(x => x.Identifier.ToLower().Equals(relativeFolderPath.Key.ToLower()));
+            var foundParser = _parsers.Find(x => x.Identifier.ToLower().Equals(relativeFolderPath.Key.ToLower()));
             if (foundParser == null)
             {
-                Logger.LogWarning($"No parser exists for [{relativeFolderPath.Key}]");
+                Logger.LogWarning($"No parser exists for \"{relativeFolderPath.Key}\"");
                 return false;
             }
             DirectoryInfo directoryInfo = new DirectoryInfo(folderPath);
@@ -384,37 +447,63 @@ namespace QM_WeaponImporter
             foreach (FileInfo singleFile in files)
             {
                 Logger.SetContext(singleFile.Name);
-                string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
-                foundParser.Parse(configItemContent);
-                Logger.LogInfo($"Finished parsing {singleFile.Name} in {relativeFolderPath}");
-                Logger.ClearContext();
+                try
+                {
+                    string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
+                    foundParser.Parse(configItemContent);
+                    Logger.LogInfo($"Finished parsing {singleFile.Name} in {relativeFolderPath}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError($"Exception when parsing file \"{singleFile.Name}\" in \"{relativeFolderPath}\".\n{ex.Message}");
+                }
+                finally
+                {
+                    Logger.ClearContext();
+                }
             }
             return true;
         }
 
         #region Utils
+        private static void AddTraitToGame(ItemTraitRecord traitRecord)
+        {
+            MGSC.Data.ItemTraits.AddRecord(traitRecord.Id, traitRecord);
+        }
 
-        private static void AddItemToGame(BasePickupItemRecord item)
+        private static void AddItemToGame(BasePickupItemRecord item, string descriptorCategory)
         {
             if (item.ContentDescriptor != null)
             {
-                try
+                // try
+                // {
+                //     if (MGSC.Data.Items.GetSimpleRecord<BasePickupItemRecord>(item.Id) != null)
+                //     {
+                //         // If a weapon with that ID, by any case, is already registered. OVERRIDE IT.
+                //         // In the end this will ensure correctness of mods over other ones.
+                //         // Also creators must ensure IDs are unique.
+                //         //MGSC.Data.Items.RemoveRecord(item.Id);
+                //         Logger.LogWarning($"An item with ID: [{item.Id}] would have been overriden.");
+                //     }
+                // }
+                // catch (Exception ex)
+                // {
+                //     // ignored
+                // }
+                if (MGSC.Data.Descriptors.ContainsKey(descriptorCategory))
                 {
-                    if (MGSC.Data.Items.GetSimpleRecord<BasePickupItemRecord>(item.Id) != null)
-                    {
-                        // If a weapon with that ID, by any case, is already registered. OVERRIDE IT.
-                        // In the end this will ensure correctness of mods over other ones.
-                        // Also creators must ensure IDs are unique.
-                        MGSC.Data.Items.RemoveRecord(item.Id);
-                        Logger.LogWarning($"An item with ID: [{item.Id}] was OVERRIDEN!!!");
-                    }
+                    MGSC.Data.Descriptors[descriptorCategory].AddDescriptor(item.Id, item.ItemDesc);
                 }
-                catch (Exception ex) { }
+                else
+                {
+                    Logger.LogWarning($"Descriptor category \"{descriptorCategory}\" does not exist. Descriptor for {item.Id} not added in MGSC.Descriptors");
+                }
+
                 MGSC.Data.Items.AddRecord(item.Id, item);
             }
             else
             {
-                Logger.LogError($"Item {item.Id} could not be loaded because descriptor is null.");
+                Logger.LogError($"{item.Id} could not be loaded because descriptor is null.");
             }
         }
 
@@ -432,14 +521,29 @@ namespace QM_WeaponImporter
                 }
             }
             catch (Exception ex) { }
-            MGSC.Data.ItemTransformation.AddRecord(item.Id, item);
+            try
+            {
+                if (MGSC.Data.Items.GetSimpleRecord<BasePickupItemRecord>(item.Id) != null)
+                {
+                    MGSC.Data.ItemTransformation.AddRecord(item.Id, item);
+                }
+                else
+                {
+                    Logger.LogError($"Error when checking for Item Transformation with {item.Id}");
+                }
+            }
+            catch (NullReferenceException nullRef)
+            {
+                // Throw a warning informing that this has skipped.
+                Logger.LogWarning($"Item Transformation for \"{item.Id}\" has been skipped. The item has not been found in Data.Items");
+            }
         }
 
         private static void AddProduceReceipt(ItemProduceReceipt item)
         {
             try
             {
-                var existingReceipt = MGSC.Data.ProduceReceipts.Find(x => x.Equals(item.Id));
+                var existingReceipt = MGSC.Data.ProduceReceipts.Find(x => x.Id.Equals(item.Id));
                 if (existingReceipt != null)
                 {
                     // If a weapon with that ID, by any case, is already registered. OVERRIDE IT.
@@ -450,13 +554,32 @@ namespace QM_WeaponImporter
                 }
             }
             catch (Exception ex) { }
-            MGSC.Data.ProduceReceipts.Add(item);
+            try
+            {
+                if (MGSC.Data.Items.GetSimpleRecord<BasePickupItemRecord>(item.OutputItem) != null)
+                {
+                    MGSC.Data.ProduceReceipts.Add(item);
+                }
+            }
+            catch (NullReferenceException nullRef)
+            { 
+                // Throw a warning informing that this has skipped.
+                Logger.LogWarning($"Produce Receipt for \"{item.OutputItem}\" has been skipped. The item has not been found in Data.Items");
+            }
         }
 
-        private static void AddFireModeToGame(FireModeRecord fireModeRecord)
+        private static void AddFireModeToGame(FireModeRecord fireModeRecord, string descriptorCategory)
         {
             if (fireModeRecord.ContentDescriptor != null)
             {
+                if (MGSC.Data.Descriptors.ContainsKey(descriptorCategory))
+                {
+                    MGSC.Data.Descriptors[descriptorCategory].AddDescriptor(fireModeRecord.Id, fireModeRecord.ContentDescriptor);
+                }
+                else
+                {
+                    Logger.LogWarning($"Descriptor category \"{descriptorCategory}\" does not exist. Descriptor for firemode: \"{fireModeRecord.Id}\" not added in MGSC.Descriptors");
+                }
                 MGSC.Data.Firemodes.AddRecord(fireModeRecord.Id, fireModeRecord);
             }
             else
@@ -465,23 +588,74 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static string ExtractCustomParameter(Dictionary<string, string[]> descriptorParameters, string parameter)
+        public static T GetDescriptor<T>(string id) where T : CustomBaseDescriptor
         {
-            descriptorParameters.TryGetValue(parameter, out string[] customParameters);
-            if (descriptorParameters == null || customParameters == null) return null;
-            return customParameters[0];
-        }
-
-        public static CustomItemContentDescriptor GetDescriptor(string id)
-        {
-            var item = itemDescriptors.Find(x => x.attachedId.Equals(id));
+            var item = _itemDescriptors.Find(x => x.attachedId.Equals(id));
             if (item == null)
             {
-                Logger.LogError($"Descriptor for {id} not found. Returning a null");
+                Logger.LogError($"Descriptor for \"{id}\" not found.");
                 return null;
             }
-            return item;
+            return item as T;
         }
+
+        private static Dictionary<string, string> OrderByType(Dictionary<string, string> dictionary)
+        {
+            List<string> firstOrder = new List<string>() { "trait", "ammo", "firemode" };
+            List<string> lastOrder = new List<string>() { "transform", "receipts" };
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            Dictionary<string, string> end = new Dictionary<string, string>();
+            // First Traits
+            // Then Ammo
+            // Then Firemodes
+            // The rest
+            // Crafting recipes last
+            foreach (string item in firstOrder)
+            {
+                var indexOfValue = dictionary.Keys.ToList().FindIndex(x => x.Contains(item));
+                if (indexOfValue != -1)
+                {
+                    var res = dictionary.ElementAt(indexOfValue);
+                    result.Add(res.Key, res.Value);
+                    dictionary.Remove(res.Key);
+                }
+            }
+
+            var endResult = new Dictionary<string, string>();
+            foreach (string item in lastOrder)
+            {
+                var indexOfValue = dictionary.Keys.ToList().FindIndex(x => x.Contains(item));
+                if (indexOfValue != -1)
+                {
+                    var res = dictionary.ElementAt(indexOfValue);
+                    endResult.Add(res.Key, res.Value);
+                    dictionary.Remove(res.Key);
+                }
+            }
+
+            dictionary.ToList().ForEach(x => result.Add(x.Key, x.Value));
+            endResult.ToList().ForEach(x => result.Add(x.Key, x.Value));
+
+            return result;
+        }
+
+        private static List<string> GetDescriptorsOrder()
+        {
+            return new List<string>()
+            {
+                "ammo",
+                "firemode",
+                "weapons"
+            };
+        }
+
+        //private static string ExtractCustomParameter(Dictionary<string, string[]> descriptorParameters, string parameter)
+        //{
+        //    descriptorParameters.TryGetValue(parameter, out string[] customParameters);
+        //    if (descriptorParameters == null || customParameters == null) return null;
+        //    return customParameters[0];
+        //}
+
 
         /// <summary>
         /// Modder can use this function to add custom data parsers.
@@ -489,7 +663,7 @@ namespace QM_WeaponImporter
         /// <param name="userTemplate"></param>
         public static void AddParser(IConfigParser userTemplate)
         {
-            Parsers.Add(userTemplate);
+            _parsers.Add(userTemplate);
         }
 
         #endregion
