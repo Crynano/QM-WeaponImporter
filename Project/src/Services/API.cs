@@ -1,5 +1,7 @@
 ﻿using System;
+using AsmResolver.DotNet.Cloning;
 using MGSC;
+using QM_WeaponImporter.ErrorManagement;
 using QM_WeaponImporter.Services.Items;
 using QM_WeaponImporter.Templates;
 using UnityEngine;
@@ -17,8 +19,8 @@ public static class API
         Setup(modName);
         try
         {
-            var result = DataParser.ImportConfig(rootPath);
-            return result;
+            var result = ImportManager.ImportConfig(rootPath);
+            return result.Result;
         }
         catch (Exception e)
         {
@@ -30,7 +32,7 @@ public static class API
         }
         return false;
     }
-
+    
     /// <summary>
     /// Automatically gets the reference from the given Mod context provided by MGSC
     /// </summary>
@@ -40,20 +42,19 @@ public static class API
     public static bool LoadModConfig(string modName, MGSC.IModContext context)
     {
         Setup(modName);
-        try
-        {
-            var result = DataParser.ImportConfig(context.ModContentPath);
-            return result;
-        }
-        catch (Exception e)
-        {
-            Logger.LogError($"Mod with path {context.ModContentPath} could not be loaded.\n{e.Message}\n{e.Source}");
-        }
-        finally
-        {
-            Logger.FlushAdditive();
-        }
-        return false;
+        return ImportManager.ImportConfig(context)?.Result ?? false;
+    }
+    
+    public static ResultInfo LoadMod(string modName, IModContext modContext)
+    {
+        Setup(modName);
+        return ImportManager.ImportConfig(modContext);
+    }
+    
+    public static ResultInfo LoadModWithDefaultConfig(string modName, IModContext modContext)
+    {
+        Setup(modName);
+        return ImportManager.ImportConfig(modContext, true);
     }
 
     public static bool LoadModConfig(string modName, ConfigTemplate userConfig, string dataFolderRoot)
@@ -67,8 +68,8 @@ public static class API
             }
             else
             {
-                var result = DataParser.ImportConfig(userConfig, dataFolderRoot);
-                return result;
+                var result = ImportManager.ImportConfig(dataFolderRoot, userConfig);
+                return result.Result;
             }
         }
         catch (Exception e)

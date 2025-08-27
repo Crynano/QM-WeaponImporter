@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using QM_WeaponImporter.ErrorManagement;
 using UnityEngine;
 
 namespace QM_WeaponImporter;
@@ -14,7 +15,7 @@ internal static class Logger
         Debug
     }
 
-    private static string LogFileName => $"Log_{DateTime.Now.ToString(@"dd_MM_yyyy")}.log";
+    private static string LogFileName => $"Log.log"; //$"Log_{DateTime.Now.ToString(@"dd_MM_yyyy")}.log";
     private static string LogSignature { get; set; } = "QM_WeaponImporter";
 
     private static string LogStart => $"[{DateTime.Now.ToString()}][{LogSignature}][START] ----------------- Log Start -----------------\nGame Version Report: {Application.version}\nWeapon Importer Version Report: {Assembly.GetExecutingAssembly().GetName().Version}\n";
@@ -25,10 +26,22 @@ internal static class Logger
 
     private static string LogPath = Path.Combine(ConfigManager.AllModsConfigFolder, LogFileName);
 
+    private static ResultInfo currentResultInfo;
+
     public static void SetConfig(string modName)
     {
         LogSignature = modName;
-        LogPath = Path.Combine(ConfigManager.AllModsConfigFolder, modName, "Logs", LogFileName);
+        LogPath = Path.Combine(ConfigManager.AllModsConfigFolder, modName, LogFileName);
+    }
+
+    public static void LinkResult(ResultInfo resultInfo)
+    {
+        currentResultInfo = resultInfo;
+    }
+
+    public static void ClearResultInfo()
+    {
+        currentResultInfo = null;
     }
 
     public static void LogDebug(string message)
@@ -55,6 +68,7 @@ internal static class Logger
     {
         //if (!ConfigManager.CurrentModConfig.ShowErrors) return;
         WriteToLog(message, LogType.Error, true);
+        currentResultInfo?.ErrorMessages.Add(message);
     }
 
     public static void SetContext(string context)

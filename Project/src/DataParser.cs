@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using QM_WeaponImporter.ErrorManagement;
 using QM_WeaponImporter.Interfaces;
 using UnityEngine;
 
@@ -18,27 +19,36 @@ namespace QM_WeaponImporter
     // BUt if multiple mods are loading stuff at the same time, they should have the file or class and say, load these weapons please.
     // The class should include the root folder. Maybe a simple ../ would work but let's check.
     // We can assume it wont be needed but yeah.
-    internal static class DataParser
+    internal class DataParser
     {
         public static string RootFolder;
 
         private static List<IConfigParser> _parsers = new List<IConfigParser>();
 
         // How about we load descriptors first?
-        private static List<CustomBaseDescriptor> _itemDescriptors = new List<CustomBaseDescriptor>();
+        // This needs to be cleaned after every mod?
+        private List<CustomBaseDescriptor> _itemDescriptors = new List<CustomBaseDescriptor>();
 
-        private static void LoadDescriptors(ConfigTemplate userConfig)
+        private ItemCreatorHelper itemCreator;
+        
+        private Action<string> OnItemAddedToData;
+
+        public DataParser()
         {
-            // Old implementation, keep for retrocompatiblity
-            _parsers.Add(new TemplateParser<CustomWeaponDescriptor>("descriptorsPath", _itemDescriptors.Add));
-            KeyValuePair<string, string> descriptorsEntry = new KeyValuePair<string, string>("descriptorsPath", userConfig.descriptorsPath);
-            if (!ParseFile(descriptorsEntry))
-            {
-                // If it doesn't work, interrupt
-                Logger.LogError($"Interrupting Mod Load: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
-                throw new NullReferenceException($"Critical error: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
-            }
+            // Initialize parsers for everything first.
+            // Then, if already initialized, just skip this part!
+            if (_parsers.Count > 0) return;
 
+            itemCreator = new ItemCreatorHelper();
+            InitializeDescriptorParsers();
+            InitializeItemParsers();
+        }
+
+        private void InitializeDescriptorParsers()
+        {
+            // Old implementation, keep for retro-compatibility
+            _parsers.Add(new TemplateParser<CustomWeaponDescriptor>("descriptorsPath", _itemDescriptors.Add));
+            
             // Now that we have a list, we can go through it.
             // Add all parsers for custom content descriptors.
             // Weapons
@@ -72,27 +82,9 @@ namespace QM_WeaponImporter
                 Logger.LogDebug($"Adding custom firemode descriptor with ID: \"{fireModeDesc.attachedId}\"");
                 _itemDescriptors.Add(fireModeDesc);
             }));
-            
-            try
-            {
-                var descDictionary = userConfig.descriptorsPaths;
-                var orderedDic = descDictionary.OrderBy(x => GetDescriptorsOrder().FindIndex(y => x.Key.Contains(y.ToLower())));
-                Logger.LogDebug($"Printing ordered dictionary!");
-                foreach (var singleDescriptorDictionary in orderedDic)
-                {
-                    Logger.LogDebug(singleDescriptorDictionary.Key);
-                    Logger.LogDebug($"Trying to load new method descriptor at {singleDescriptorDictionary}");
-                    if (!ParseFile(singleDescriptorDictionary)) continue;
-                }
-            }
-            catch (NullReferenceException ex)
-            {
-                Logger.LogError($"Descriptors dictionary missing in {Importer.GlobalConfigName} file. Some weapons might not load at all or prevent the mod from loading. Please check the following example files and ensure that \"global_config.json\" file contains the \"descriptorsPaths\" properties.");
-                //ExamplesManager.CreateExampleFiles(RootFolder);
-            }
         }
 
-        private static void LoadDefaultParsers()
+        private void InitializeItemParsers()
         {
             _parsers.Add(new NullableRecordParser<ItemTraitRecordTemplate>("trait", delegate (ItemTraitRecordTemplate itemTraitRecord)
             {
@@ -129,14 +121,16 @@ namespace QM_WeaponImporter
             _parsers.Add(new TemplateParser<MeleeWeaponTemplate>("meleeweapons", delegate (MeleeWeaponTemplate weaponTemplate)
             {
                 Logger.SetContext(weaponTemplate.Id);
-                ItemCreatorHelper.CreateWeapon(weaponTemplate, GetDescriptor<CustomWeaponDescriptor>(weaponTemplate.Id));
+                var added = itemCreator.CreateWeapon(weaponTemplate, GetDescriptor<CustomWeaponDescriptor>(weaponTemplate.Id));
+                if (added) OnItemAddedToData?.Invoke(weaponTemplate.Id);
             }));
             // TODO -- port this to the ImportParser
             // ------- eliminate RangedWeaponTemplate
             _parsers.Add(new TemplateParser<RangedWeaponTemplate>("rangedweapons", delegate (RangedWeaponTemplate weaponTemplate)
             {
                 Logger.SetContext(weaponTemplate.Id);
-                ItemCreatorHelper.CreateWeapon(weaponTemplate, GetDescriptor<CustomWeaponDescriptor>(weaponTemplate.Id));
+                var added = itemCreator.CreateWeapon(weaponTemplate, GetDescriptor<CustomWeaponDescriptor>(weaponTemplate.Id));
+                if (added) OnItemAddedToData?.Invoke(weaponTemplate.Id);
             }));
             _parsers.Add(new ImportParser<ItemTransformationRecord>("itemtransforms", AddItemTransform));
             _parsers.Add(new ImportParser<ItemProduceReceipt>("itemreceipts", AddProduceReceipt));
@@ -161,7 +155,7 @@ namespace QM_WeaponImporter
                     AddItemToGame(diskRecord, "datadisks");
                 }
             }));
-            _parsers.Add(new NullableRecordParser<FactionTemplate>("factionconfig", ItemCreatorHelper.AddItemsToFactions));
+            _parsers.Add(new NullableRecordParser<FactionTemplate>("factionconfig", itemCreator.AddItemsToFactions));
             _parsers.Add(new NullableRecordParser<BackpackRecord>("backpacks", delegate (BackpackRecord backpackItem)
             {
                 ItemContentDescriptor itemContentDescriptor = GetDescriptor<CustomItemContentDescriptor>(backpackItem.Id).GetOriginal<ItemContentDescriptor>();
@@ -282,11 +276,40 @@ namespace QM_WeaponImporter
                 AddFireModeToGame(fireModeRecord, "firemodes");
             }));
         }
+        
+        private void LoadDescriptors(ConfigTemplate userConfig)
+        {
+            KeyValuePair<string, string> descriptorsEntry = new KeyValuePair<string, string>("descriptorsPath", userConfig.descriptorsPath);
+            if (!ParseFile(descriptorsEntry))
+            {
+                // If it doesn't work, interrupt
+                Logger.LogError($"Interrupting Mod Load: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
+                throw new NullReferenceException($"Critical error: Descriptors Folder Path not found in {descriptorsEntry.Value}.\nPlease add them in the {Importer.GlobalConfigName} file.");
+            }
+            
+            try
+            {
+                var descDictionary = userConfig.descriptorsPaths;
+                var orderedDic = descDictionary.OrderBy(x => GetDescriptorsOrder().FindIndex(y => x.Key.Contains(y.ToLower())));
+                Logger.LogDebug($"Printing ordered dictionary!");
+                foreach (var singleDescriptorDictionary in orderedDic)
+                {
+                    Logger.LogDebug(singleDescriptorDictionary.Key);
+                    Logger.LogDebug($"Trying to load new method descriptor at {singleDescriptorDictionary}");
+                    if (!ParseFile(singleDescriptorDictionary)) continue;
+                }
+            }
+            catch (NullReferenceException ex)
+            {
+                Logger.LogError($"Descriptors dictionary missing in {Importer.GlobalConfigName} file. Some weapons might not load at all or prevent the mod from loading. Please check the following example files and ensure that \"global_config.json\" file contains the \"descriptorsPaths\" properties.");
+                //ExamplesManager.CreateExampleFiles(RootFolder);
+            }
+        }
 
         /// <summary>
         /// Callable for any item that goes into Data.Items and is an item.
         /// </summary>
-        internal static void ProcessItem(IOriginalCopy<ItemRecord> originalItem, string descriptorCategory)
+        internal void ProcessItem(IOriginalCopy<ItemRecord> originalItem, string descriptorCategory)
         {
             var itemRecord = originalItem.GetOriginal();
             var customItemDescriptor = GetDescriptor<CustomItemContentDescriptor>(itemRecord.Id).GetOriginal<VestDescriptor>();
@@ -294,7 +317,7 @@ namespace QM_WeaponImporter
             AddItemToGame(itemRecord, descriptorCategory);
         }
 
-        internal static bool LoadLocalization(ConfigTemplate userConfig)
+        internal bool LoadLocalization(ConfigTemplate userConfig)
         {
             Dictionary<string, string> localPaths = userConfig.localizationPaths;
             if (localPaths != null || localPaths.Count > 0)
@@ -339,7 +362,7 @@ namespace QM_WeaponImporter
                             {
                                 case "station":
                                     descGroup = "type";
-                                    ItemCreatorHelper.AddLocalization(key, "shortname", json.name);
+                                    itemCreator.AddLocalization(key, "shortname", json.name);
                                     break;
                                 case "alliance":
                                     descGroup = "subName";
@@ -348,8 +371,8 @@ namespace QM_WeaponImporter
                                     descGroup = "desc";
                                     break;
                             }
-                            ItemCreatorHelper.AddLocalization(key, nameGroup, json.name);
-                            ItemCreatorHelper.AddLocalization(key, descGroup, json.shortdesc);
+                            itemCreator.AddLocalization(key, nameGroup, json.name);
+                            itemCreator.AddLocalization(key, descGroup, json.shortdesc);
 
                             //Logger.LogInfo($"Localization loaded successfully for {filePath.Value}");
                         }
@@ -369,66 +392,67 @@ namespace QM_WeaponImporter
             }
         }
 
-        internal static bool ImportConfig(string configPath)
-        {
-            if (string.IsNullOrEmpty(configPath))
-            {
-                Logger.LogError($"Null config path at ImportConfig entry point.");
-                return false;
-            }
-            return ImportConfig(Importer.GetGlobalConfig(configPath), configPath);
-        }
-
         // Create the global config in the assembly folder.
         // You only send the config over, then everything else is automatic.
-        internal static bool ImportConfig(ConfigTemplate userConfig, string rootPath)
+        internal void ImportConfig(ConfigTemplate userConfig, string rootPath, ref ResultInfo resultInfo)
         {
             DateTime now = DateTime.Now;
             RootFolder = rootPath;
+            OnItemAddedToData = resultInfo.AddItem;
+            
             // We should check the root first.
             // See if atleast has the config file...
             if (string.IsNullOrEmpty(RootFolder))
             {
                 Logger.LogError($"Root Folder is empty.");
-                return false;
+                resultInfo.Result = false;
+                resultInfo.ResultMessage = "Root folder is empty";
+                return;
             }
 
             if (!Directory.Exists(RootFolder))
             {
                 Logger.LogError($"Root Folder \"{RootFolder}\" does not exist.");
-                return false;
+                resultInfo.Result = false;
+                resultInfo.ResultMessage = $"Folder \"{RootFolder}\" does not exist.";
+                return;
             }
 
             Logger.LogInfo($"Starting import config from: {rootPath}");
             Importer.ImagePixelScaling = Mathf.Max(1f, userConfig.imagePixelScale);
+            
             // This must include the Import.
             LoadDescriptors(userConfig);
-            LoadDefaultParsers();
             try
             {
                 LoadLocalization(userConfig);
-                //TODO Check it works?
                 var orderedFolders = OrderByType(userConfig.folderPaths);
                 foreach (var path in orderedFolders)
                 {
-                    Logger.LogDebug($"Trying ordered folders! \"{path.Key}\" and \"{path.Value}\"");
+                    //Logger.LogDebug($"Trying ordered folders! \"{path.Key}\" and \"{path.Value}\"");
                     if (!ParseFile(path)) continue;
                 }
-                return true;
+                return;
             }
             catch (Exception e)
             {
                 Logger.LogError($"Configuration failed for {rootPath}.\n{e.Message}\n{e.StackTrace}");
+                resultInfo.ResultMessage = $"Configuration failed for {rootPath}.\n{e.Message}\n{e.StackTrace}";
+                resultInfo.Result = false;
             }
             finally
             {
-                Logger.LogInfo($"Import process took {(DateTime.Now - now).TotalSeconds:0.00} seconds.");
+                // We clean the descriptors so another mod can use it.
+                Logger.LogInfo($"Import process took {resultInfo.ExecutionTime:0.00} seconds.");
+                resultInfo.ResultMessage = "Successfully imported.";
+                resultInfo.ExecutionTime = (DateTime.Now - now).TotalSeconds;
+                _itemDescriptors.Clear();
             }
-            return false;
+            return;
         }
 
 
-        private static bool ParseFile(KeyValuePair<string, string> relativeFolderPath)
+        private  bool ParseFile(KeyValuePair<string, string> relativeFolderPath)
         {
             string folderPath = Path.Combine(RootFolder, relativeFolderPath.Value);
             if (!Directory.Exists(folderPath))
@@ -436,12 +460,14 @@ namespace QM_WeaponImporter
                 Logger.LogWarning($"Folder in \"{folderPath}\" does not exist. Ignoring and loading other config files.");
                 return false;
             }
+            
             var foundParser = _parsers.Find(x => x.Identifier.ToLower().Equals(relativeFolderPath.Key.ToLower()));
             if (foundParser == null)
             {
                 Logger.LogWarning($"No parser exists for \"{relativeFolderPath.Key}\"");
                 return false;
             }
+            
             DirectoryInfo directoryInfo = new DirectoryInfo(folderPath);
             FileInfo[] files = directoryInfo.GetFiles("*.json");
             foreach (FileInfo singleFile in files)
@@ -451,7 +477,7 @@ namespace QM_WeaponImporter
                 {
                     string configItemContent = File.ReadAllText(Path.Combine(folderPath, singleFile.Name));
                     foundParser.Parse(configItemContent);
-                    Logger.LogInfo($"Finished parsing {singleFile.Name} in {relativeFolderPath}");
+                    Logger.LogInfo($"Successfully parsed: \"{singleFile.Name}\" in \"{relativeFolderPath}\"");
                 }
                 catch (Exception ex)
                 {
@@ -466,12 +492,12 @@ namespace QM_WeaponImporter
         }
 
         #region Utils
-        private static void AddTraitToGame(ItemTraitRecord traitRecord)
+        private  void AddTraitToGame(ItemTraitRecord traitRecord)
         {
             MGSC.Data.ItemTraits.AddRecord(traitRecord.Id, traitRecord);
         }
 
-        private static void AddItemToGame(BasePickupItemRecord item, string descriptorCategory)
+        private  void AddItemToGame(BasePickupItemRecord item, string descriptorCategory)
         {
             if (item.ContentDescriptor != null)
             {
@@ -498,7 +524,7 @@ namespace QM_WeaponImporter
                 {
                     Logger.LogWarning($"Descriptor category \"{descriptorCategory}\" does not exist. Descriptor for {item.Id} not added in MGSC.Descriptors");
                 }
-
+                OnItemAddedToData?.Invoke(item.Id);
                 MGSC.Data.Items.AddRecord(item.Id, item);
             }
             else
@@ -507,7 +533,7 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static void AddItemTransform(ItemTransformationRecord item)
+        private  void AddItemTransform(ItemTransformationRecord item)
         {
             try
             {
@@ -539,7 +565,7 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static void AddProduceReceipt(ItemProduceReceipt item)
+        private  void AddProduceReceipt(ItemProduceReceipt item)
         {
             try
             {
@@ -568,7 +594,7 @@ namespace QM_WeaponImporter
             }
         }
 
-        private static void AddFireModeToGame(FireModeRecord fireModeRecord, string descriptorCategory)
+        private  void AddFireModeToGame(FireModeRecord fireModeRecord, string descriptorCategory)
         {
             if (fireModeRecord.ContentDescriptor != null)
             {
@@ -588,7 +614,7 @@ namespace QM_WeaponImporter
             }
         }
 
-        public static T GetDescriptor<T>(string id) where T : CustomBaseDescriptor
+        public  T GetDescriptor<T>(string id) where T : CustomBaseDescriptor
         {
             var item = _itemDescriptors.Find(x => x.attachedId.Equals(id));
             if (item == null)
@@ -599,7 +625,7 @@ namespace QM_WeaponImporter
             return item as T;
         }
 
-        private static Dictionary<string, string> OrderByType(Dictionary<string, string> dictionary)
+        private  Dictionary<string, string> OrderByType(Dictionary<string, string> dictionary)
         {
             List<string> firstOrder = new List<string>() { "trait", "ammo", "firemode" };
             List<string> lastOrder = new List<string>() { "transform", "receipts" };
@@ -639,7 +665,7 @@ namespace QM_WeaponImporter
             return result;
         }
 
-        private static List<string> GetDescriptorsOrder()
+        private  List<string> GetDescriptorsOrder()
         {
             return new List<string>()
             {
@@ -649,7 +675,7 @@ namespace QM_WeaponImporter
             };
         }
 
-        //private static string ExtractCustomParameter(Dictionary<string, string[]> descriptorParameters, string parameter)
+        //private  string ExtractCustomParameter(Dictionary<string, string[]> descriptorParameters, string parameter)
         //{
         //    descriptorParameters.TryGetValue(parameter, out string[] customParameters);
         //    if (descriptorParameters == null || customParameters == null) return null;
@@ -661,7 +687,7 @@ namespace QM_WeaponImporter
         /// Modder can use this function to add custom data parsers.
         /// </summary>
         /// <param name="userTemplate"></param>
-        public static void AddParser(IConfigParser userTemplate)
+        public  void AddParser(IConfigParser userTemplate)
         {
             _parsers.Add(userTemplate);
         }

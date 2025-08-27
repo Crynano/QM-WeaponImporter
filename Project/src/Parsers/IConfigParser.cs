@@ -1,4 +1,6 @@
-﻿namespace QM_WeaponImporter;
+﻿using QM_WeaponImporter.ErrorManagement;
+
+namespace QM_WeaponImporter;
 internal interface IConfigParser
 {
     public string Identifier { get; set; }
